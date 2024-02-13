@@ -11,3 +11,4 @@ bin           = @["mind"]
 # Dependencies
 
 requires "nim >= 2.0.2"
+requires "docopt"
