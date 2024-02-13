@@ -1,6 +1,8 @@
 import docopt
 import docopt/dispatch
 
+import app/[items, tags, queries, backups]
+
 
 const doc = """
 Mind. Tags for the sane.
@@ -20,13 +22,18 @@ Usage:
   mind tag list [--system]
   mind tag del <tag>
   mind tag edit <tag> <newtag>
-  mind tag [--remove] <tag> <files>...
+  mind tag [--remove | --hard] <tag> <files>...
   mind find [-q=<query>] [-t=<level>] [-FMTDN]
+  mind reset [--clean]
+  mind backup list [<filename>]
+  mind backup new [<filename>]
+  mind backup del [<filename>]
+  mind backup restore [<filename>]
 
 Options:
   -h --help                 Show this screen.
   --version                 Show version.
-  -s, --system              Show only system tags.
+  --system                  Show only system tags.
   -r, --remove              Remove tag from the listed files.
   -q QUERY, --query=QUERY   Filter results by the provided QUERY.
   -F, --file                Show file-type results of the search.
@@ -36,24 +43,6 @@ Options:
   -N, --not-done            Show not-done tasks out of the search results.
   -t LEVEL --tree=LEVEL     Show results in tree mode until LEVEL then revert to list mode.
 """
-
-proc newTask(text: string) = echo "new task: " & text
-proc editTask(id: int, newtext: string) = echo "edit task n." & $id & " to " & newtext
-proc subTask(id: int, parent: int) = echo "sub task n." & $id & " to task n." & $parent
-proc doTask(id: int) = echo "do task n." & $id
-proc undoTask(id: int) = echo "undo task n." & $id
-proc delTask(id: int) = echo "delete task n." & $id
-proc newMemo(text: string) = echo "new memo" & (if text != "nil": ": " & text else: "")
-proc openMemo(id: int) = echo "open memo n." & $id
-proc delMemo(id: int) = echo "delete memo n." & $id
-proc listTag(system: bool) = echo "show " & (if system: "system" else: "non-system") & " tags."
-proc editTag(tag: string, newtag: string) = echo "edit tag #" & tag & " to " & newtag
-proc delTag(tag: string) = echo "delete tag #" & tag
-proc tag(tag: string, files: seq[string], remove: bool) = echo (if remove: "un" else: "") & "tag " & $files & " by #" & tag
-proc find(query: string, level: int, file: bool, memo: bool,
-          task: bool, done: bool, not_done: bool) =
-  echo "show items according to query: " & query & " at a " &
-    (if level == 0: "flat" else: $level & "-tree ") & " listing."
 
 when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
@@ -74,3 +63,9 @@ when isMainModule:
   args.dispatchProc(delTag, "tag", "del")
   args.dispatchProc(tag, "tag")
   args.dispatchProc(find, "find")
+
+  args.dispatchProc(reset, "reset")
+  args.dispatchProc(listBackup, "backup", "list")
+  args.dispatchProc(newBackup, "backup", "new")
+  args.dispatchProc(delBackup, "backup", "del")
+  args.dispatchProc(restoreBackup, "backup", "restore")
