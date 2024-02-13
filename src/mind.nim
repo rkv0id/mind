@@ -3,7 +3,7 @@ import docopt
 
 when isMainModule:
   let doc = """
-  Naval Fate.
+  Mind. Tags for the sane.
 
   Usage:
     mind --version
