@@ -1,3 +1,5 @@
+mind
+*.log
 nimcache/
 nimblecache/
 htmldocs/
