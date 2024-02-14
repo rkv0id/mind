@@ -1,5 +1,6 @@
 from std/times import DateTime, now
-from std/options import none
+from std/options import none, some, Option
+
 
 type
   ItemKind {.pure.} = enum
@@ -7,7 +8,7 @@ type
 
   Item = object
     id: int
-    createdAt = now()
+    addedAt : DateTime
     case kind: ItemKind
       of Task:
         content : string
@@ -15,9 +16,18 @@ type
         doneAt = none DateTime
       of Memo:
         title: string
-        content: string
+        body: string
         modifiedAt = none DateTime
       of File:
         path: string
         hardCopy: bool
+  
+  Tag = object
+    name: string
+    system: bool
+    items: seq[Item]
+  
+
+proc newMemo(addedAt = now()): Option[int] = some 5
+  ## return id of memo if added in db
   
