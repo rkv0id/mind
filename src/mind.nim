@@ -8,22 +8,22 @@ const doc = """
 Mind. Tags for the sane.
 
 Description:
-  A NIMble and efficient tag-based system for file and content management while also providing memos and todo tasks utilities.
+  A NIMble and efficient tag-based system for file and content management while also powering memos and todolist utilities.
 
 Usage:
   mind --version
   mind (-h | --help)
+  mind memo new [<text>]
+  mind memo (open | del) <id>
   mind task new <text>
   mind task <id> edit <newtext>
   mind task <id> sub <parent>
   mind task (do | undo | del) <id>
-  mind memo new [<text>]
-  mind memo (open | del) <id>
   mind tag list [--system]
   mind tag del <tag>
   mind tag edit <tag> <newtag>
   mind tag [--remove | --hard] <tag> <files>...
-  mind find [-q=<query>] [-t=<level>] [-FMTDN]
+  mind find [-fmdp] [-t=<level>] [-q=<query>]
   mind reset [--clean]
   mind backup list [<filename>]
   mind backup new [<filename>]
@@ -31,36 +31,35 @@ Usage:
   mind backup restore [<filename>]
 
 Options:
-  -h --help                 Show this screen.
-  --version                 Show version.
-  --system                  Show only system tags.
-  -r, --remove              Remove tag from the listed files.
-  -q QUERY, --query=QUERY   Filter results by the provided QUERY.
-  -F, --file                Show file-type results of the search.
-  -M, --memo                Show memo-type results of the search.
-  -T, --task                Show task-type results of the search.
-  -D, --done                Show done tasks out of the search results.
-  -N, --not-done            Show not-done tasks out of the search results.
-  -t LEVEL --tree=LEVEL     Show results in tree mode until LEVEL then revert to list mode.
+  -h --help               Show this screen.
+  --version               Show version.
+  --system                Show only system tags.
+  -r --remove             Remove tag from the listed files.
+  -f --file               Show results for files.
+  -m --memo               Show results for memos.
+  -d --done               Show results for done tasks.
+  -p --pending            Show results for pending tasks.
+  -q QUERY --query=QUERY  Filter results using the provided QUERY.
+  -t LEVEL --tree=LEVEL   Show results in tree mode until LEVEL then revert to list mode. [default: 0]
 """
 
 when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
 
   args.dispatchProc(newTask, "task", "new")
-  args.dispatchProc(delTask, "task", "del")
   args.dispatchProc(editTask, "task", "edit")
   args.dispatchProc(subTask, "task", "sub")
   args.dispatchProc(doTask, "task", "do")
   args.dispatchProc(undoTask, "task", "undo")
+  args.dispatchProc(delTask, "task", "del")
   
   args.dispatchProc(newMemo, "memo", "new")
   args.dispatchProc(openMemo, "memo", "open")
   args.dispatchProc(delMemo, "memo", "del")
 
   args.dispatchProc(listTag, "tag", "list")
-  args.dispatchProc(editTag, "tag", "edit")
   args.dispatchProc(delTag, "tag", "del")
+  args.dispatchProc(editTag, "tag", "edit")
   args.dispatchProc(tag, "tag")
   args.dispatchProc(find, "find")
 
