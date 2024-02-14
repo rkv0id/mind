@@ -16,13 +16,14 @@ Usage:
   mind memo new [<text>]
   mind memo (open | del) <id>
   mind task new <text>
-  mind task <id> edit <newtext>
+  mind task <id> mod <newtext>
   mind task <id> sub <parent>
   mind task (do | undo | del) <id>
-  mind tag list [--system]
+  mind tag ls [--system]
   mind tag del <tag>
-  mind tag edit <tag> <newtag>
-  mind tag [--remove | --hard] <tag> <files>...
+  mind tag mod <tag> <newtag>
+  mind tag add [--hard] <tag> <files>...
+  mind tag rm <tag> <files>...
   mind find [-fmdp] [-t=<level>] [-q=<query>]
   mind reset [--clean]
   mind backup list [<filename>]
@@ -33,7 +34,8 @@ Usage:
 Options:
   -h --help               Show this screen.
   --version               Show version.
-  --system                Show only system tags.
+  -S --system             Show only system tags.
+  -H --hard               Create a hard copy for file and tag that one.
   -r --remove             Remove tag from the listed files.
   -f --file               Show results for files.
   -m --memo               Show results for memos.
@@ -47,7 +49,7 @@ when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
 
   args.dispatchProc(newTask, "task", "new")
-  args.dispatchProc(editTask, "task", "edit")
+  args.dispatchProc(editTask, "task", "mod")
   args.dispatchProc(subTask, "task", "sub")
   args.dispatchProc(doTask, "task", "do")
   args.dispatchProc(undoTask, "task", "undo")
@@ -59,8 +61,9 @@ when isMainModule:
 
   args.dispatchProc(listTag, "tag", "list")
   args.dispatchProc(delTag, "tag", "del")
-  args.dispatchProc(editTag, "tag", "edit")
-  args.dispatchProc(tag, "tag")
+  args.dispatchProc(editTag, "tag", "mod")
+  args.dispatchProc(addTag, "tag", "add")
+  args.dispatchProc(removeTag, "tag", "rm")
   args.dispatchProc(find, "find")
 
   args.dispatchProc(reset, "reset")
