@@ -5,10 +5,9 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 
 ### TODOs
 
-- [ ] Memos support
-- [ ] Tasks support
+- [ ] Memos basics
+- [ ] Tasks basics
 - [ ] Tags support
-- [ ] Basic CLI tooling & filtering
-- [ ] Some visual work
 - [ ] Backup compression and auto-backups
 - [ ] Lookup DSL
+- [ ] Some CLI visual work
