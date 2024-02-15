@@ -11,9 +11,9 @@ Description:
   A NIMble and efficient tag-based system for file and content management while also powering memos and todolist utilities.
 
 Usage:
+  mind --help
   mind --version
-  mind (-h | --help)
-  mind memo new [<text>] [--title=<title>]
+  mind memo new [--title=<title>] [<text>]
   mind memo (open | rm) <id>
   mind task new <text>
   mind task mod <id> <newtext>
@@ -23,7 +23,7 @@ Usage:
   mind tag mod <tag> <newtag>
   mind tag add <tag> [--hard] <files>...
   mind tag rm <tag> [<files>...]
-  mind find [-fmdp] [-t=<level>] [-q=<query>]
+  mind find [-fmdp] [-T=<level>] [-q=<query>]
   mind reset [--clean]
   mind backup ls [<filename>]
   mind backup new [<filename>]
@@ -32,7 +32,7 @@ Usage:
 
 Options:
   -h --help               Show this screen.
-  --version               Show version.
+  -v --version            Show version.
   -s --system             Show only system tags.
   -t TITLE --title=TITLE  Define title of new memo.
   -H --hard               Create a hard copy for file and tag that one.
