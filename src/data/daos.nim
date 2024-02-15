@@ -1,10 +1,13 @@
 from std/with import with
-from options import Option, none
 from times import DateTime, now
+from options import Option, none, some
 from std/os import getDataDir, joinPath
 
-from norm/model import Model
-from norm/sqlite import open, createTables
+from norm/model import Model, cpIgnore
+from norm/sqlite import transaction,
+                        createTables,
+                        insert, open
+
 
 const MemoedHomeDir = ".memoed"
 let
@@ -52,30 +55,33 @@ func newItemDao(addedAt = now(),
                 file = none FileDao): ItemDao =
   ItemDao(addedAt: addedAt, task: task, memo: memo, file: file)
 
-func newMemoDao(title: string,
-                body: string,
-                modifiedAt = none DateTime): MemoDao =
+func newMemoDao(title = "", body = "", modifiedAt = none DateTime): MemoDao =
   MemoDao(title: title, body: body, modifiedAt: modifiedAt)
 
-func newFileDao(path: string,
-                name = "",
-                hardCopy = false): FileDao =
+func newFileDao(path = "", name = "", hardCopy = false): FileDao =
   FileDao(path: path, name: name, hardCopy: hardCopy)
 
-func newTaskDao(content: string,
-                done = false,
-                doneAt = none DateTime): TaskDao =
+func newTaskDao(content = "", done = false, doneAt = none DateTime): TaskDao =
   TaskDao(content: content, done: done, doneAt: doneAt)
 
-func newSubOfDao(parent: TaskDao, sub: TaskDao): SubOfDao =
+func newSubOfDao(parent = newTaskDao(), sub = newTaskDao()): SubOfDao =
   SubOfDao(parent: parent, sub: sub)
 
-func newTagDao(name: string, system = false): TagDao =
+func newTagDao(name = "", system = false): TagDao =
   TagDao(name: name, system: system)
 
-func newTaggedDao(item: ItemDao, tag: TagDao): TaggedDao =
+func newTaggedDao(item = newItemDao(), tag = newTagDao()): TaggedDao =
   TaggedDao(item: item, tag: tag)
 
 proc createSchemas() =
-  with open(memoedDb, "", "", ""):
-    createTables newItemDao()
+  let dbConn = open(memoedDb, "", "", "")
+  dbConn.transaction:
+    with dbConn:
+      createTables newTaggedDao()
+      createTables newSubOfDao()
+
+proc createMemoDao*(title: string, body: string, addedAt: DateTime): int64 =
+  var memo = newMemoDao(title, body)
+  let dbConn = open(memoedDb, "", "", "")
+  dbConn.insert(memo, conflictPolicy = cpIgnore)
+  result = memo.id
