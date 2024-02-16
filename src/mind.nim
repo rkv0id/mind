@@ -13,7 +13,7 @@ Description:
 Usage:
   mind --help
   mind --version
-  mind memo new [--title=<title>] [<text>]
+  mind memo new [--title=<title>]
   mind memo (open | rm) <id>
   mind task new <text>
   mind task mod <id> <newtext>
