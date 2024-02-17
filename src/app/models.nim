@@ -1,6 +1,8 @@
 from std/times import DateTime, now
 from std/options import none, some, get,
                         Option, isNone
+from regex import findAll, re2, group
+from std/sequtils import mapIt, toSeq
 
 from ../data/daos import createMemoDao
 
@@ -30,8 +32,12 @@ type
     system: bool
     items: seq[Item]
   
+func taggedBy(content: string): seq[string] =
+  findAll(content, re2"#([a-zA-Z_][a-zA-Z0-9_]+)").toSeq
+    .mapIt(content[it.group(0)])
 
 proc newMemo*(body: string, title: Option[string]) =
   createMemoDao(now(), body,
                 if title.isNone: title.get
                 else: body[0..min(64, high(body))])
+  
