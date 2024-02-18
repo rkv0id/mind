@@ -13,4 +13,3 @@ bin           = @["mind"]
 requires "nim >= 2.0.2"
 requires "docopt"
 requires "norm"
-requires "regex"
