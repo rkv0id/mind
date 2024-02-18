@@ -1,63 +1,39 @@
 import docopt
 import docopt/dispatch
 
-import app/[items, tags, queries, backups]
+import app/[tags, queries, backups]
 
 
 const doc = """
 Mind. Tags for the sane.
 
 Description:
-  A NIMble and efficient tag-based system for file and content management while also powering memos and todolist utilities.
+  A NIMble and efficient tag-based system for file and content management.
 
 Usage:
-  mind --help
-  mind --version
-  mind memo new [--title=<title>]
-  mind memo (open | rm) <id>
-  mind task new <text>
-  mind task mod <id> <newtext>
-  mind task sub <id> <parent>
-  mind task (do | undo | rm) <id>
-  mind tag ls [--system]
+  mind -h
+  mind -v
+  mind sync [-y]
+  mind ls [-q]
   mind tag mod <tag> <newtag>
-  mind tag add <tag> [--hard] <files>...
+  mind tag add <tag> [-h] <files>...
   mind tag rm <tag> [<files>...]
-  mind find [-fmdp] [-T=<level>] [-q=<query>]
-  mind reset [--clean]
-  mind backup ls [<filename>]
-  mind backup new [<filename>]
-  mind backup rm [<filename>]
-  mind backup restore [<filename>]
+  mind find [-t=<level>] <query>
 
 Options:
   -h --help               Show this screen.
   -v --version            Show version.
+  -y --yes                Silently auto-confirm synchronisation of tags without reporting loaded changes.
+  -a --all                Show tags from all contexts.
+  -c CTX --context=CTX    Show tags from context CTX.
+  -q --quiet              Show a shorter more concise version of the output.
   -s --system             Show only system tags.
-  -t TITLE --title=TITLE  Define title of new memo.
-  -H --hard               Create a hard copy for file and tag that one.
-  -r --remove             Remove tag from the listed files.
-  -f --file               Show results for files.
-  -m --memo               Show results for memos.
-  -d --done               Show results for done tasks.
-  -p --pending            Show results for pending tasks.
-  -q QUERY --query=QUERY  Filter results using the provided QUERY.
-  -T LEVEL --tree=LEVEL   Show results in tree mode until LEVEL then revert to list mode. [default: 0]
+  -h --hard               Create a hard copy for a file and tag that one.
+  -t LEVEL --tree=LEVEL   Show results in tree mode until LEVEL then revert to list mode. [default: 0]
 """
 
 when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
-
-  args.dispatchProc(newTask, "task", "new")
-  args.dispatchProc(modifyTask, "task", "mod")
-  args.dispatchProc(subTask, "task", "sub")
-  args.dispatchProc(doTask, "task", "do")
-  args.dispatchProc(undoTask, "task", "undo")
-  args.dispatchProc(removeTask, "task", "rm")
-  
-  args.dispatchProc(newMemo, "memo", "new")
-  args.dispatchProc(openMemo, "memo", "open")
-  args.dispatchProc(removeMemo, "memo", "rm")
 
   args.dispatchProc(listTag, "tag", "ls")
   args.dispatchProc(modifyTag, "tag", "mod")
