@@ -8,6 +8,6 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 - [ ] Tags support
 - [ ] Files sym and hard links
 - [ ] Synchronise hard and sym links
-- [ ] Backup compression and auto-backups
-- [ ] Lookup DSL
+- [ ] Backups (compression and auto-backups)
 - [ ] Some CLI visual work
+- [ ] Lookup DSL
