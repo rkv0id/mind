@@ -1,7 +1,7 @@
 import docopt
 import docopt/dispatch
 
-import app/[tags, queries, backups]
+import app/[tags, queries]
 
 
 const doc = """
@@ -13,36 +13,31 @@ Description:
 Usage:
   mind -h
   mind -v
+  mind ls [-s] [-q] [<tagpattern>]
   mind sync [-y]
-  mind ls [-q]
-  mind tag mod <tag> <newtag>
-  mind tag add <tag> [-h] <files>...
-  mind tag rm <tag> [<files>...]
+  mind tag [-H] <filepattern> <tags>...
+  mind untag <filepattern> [<tags>...]
+  mind mv <name> <newname>
+  mind rm <tags>...
   mind find [-t=<level>] <query>
 
 Options:
   -h --help               Show this screen.
   -v --version            Show version.
-  -y --yes                Silently auto-confirm synchronisation of tags without reporting loaded changes.
-  -a --all                Show tags from all contexts.
-  -c CTX --context=CTX    Show tags from context CTX.
-  -q --quiet              Show a shorter more concise version of the output.
   -s --system             Show only system tags.
-  -h --hard               Create a hard copy for a file and tag that one.
+  -q --quiet              Show a shorter more concise version of the output.
+  -y --yes                Silently auto-confirm synchronisation of tags without reporting loaded changes.
+  -H --hard               Create a hard link for a file and tag it.
   -t LEVEL --tree=LEVEL   Show results in tree mode until LEVEL then revert to list mode. [default: 0]
 """
 
 when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
 
-  args.dispatchProc(listTag, "tag", "ls")
-  args.dispatchProc(modifyTag, "tag", "mod")
-  args.dispatchProc(addTag, "tag", "add")
-  args.dispatchProc(removeTag, "tag", "rm")
+  args.dispatchProc(listTags, "ls")
+  args.dispatchProc(syncTags, "sync")
+  args.dispatchProc(tagFiles, "tag")
+  args.dispatchProc(untagFiles, "untag")
+  args.dispatchProc(modTag, "mv")
+  args.dispatchProc(removeTag, "mv")
   args.dispatchProc(find, "find")
-
-  args.dispatchProc(reset, "reset")
-  args.dispatchProc(listBackup, "backup", "ls")
-  args.dispatchProc(newBackup, "backup", "new")
-  args.dispatchProc(removeBackup, "backup", "rm")
-  args.dispatchProc(restoreBackup, "backup", "restore")
