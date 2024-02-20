@@ -1,5 +1,6 @@
 from std/strutils import join
 
+
 proc listTags*(tagpattern: string, system: bool, quiet: bool) = echo "show " & (if system: "system" else: "non-system") & " tags."
 proc syncTags*(yes: bool) = echo "sync tags" & (if yes: " forcing updates" else: " suggestions") & "."
 proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =

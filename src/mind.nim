@@ -39,5 +39,5 @@ when isMainModule:
   args.dispatchProc(tagFiles, "tag")
   args.dispatchProc(untagFiles, "untag")
   args.dispatchProc(modTag, "mv")
-  args.dispatchProc(removeTag, "mv")
+  args.dispatchProc(removeTag, "rm")
   args.dispatchProc(find, "find")
