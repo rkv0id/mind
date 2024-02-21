@@ -4,7 +4,7 @@ from std/os import getDataDir, joinPath
 const MemoedHomeDir = ".memoed"
 let
   mindDataDir = getDataDir().joinPath(MemoedHomeDir)
-  mindMemoDir = getDataDir().joinPath("memos")
+  mindFilesDir = mindDataDir.joinPath("files")
   mindDbFile* = mindDataDir.joinPath("data.db")
 
-proc memoFile*(filename: string): string = mindMemoDir.joinPath(filename)
+proc hardFile*(filename: string): string = mindFilesDir.joinPath(filename)
