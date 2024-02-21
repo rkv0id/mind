@@ -39,7 +39,8 @@ proc createSchemas() =
   let dbConn = open(mindDb, "", "", "")
   dbConn.createTables newTagged()
 
-proc createFiles*(extensionToPaths: Table[string, seq[string]], tagNames = newSeq[string](), persistent = false) =
+proc createFiles*(extensionToPaths: Table[string, seq[string]],
+                  tagNames = newSeq[string](), persistent = false) =
   let dbConn = open(mindDb, "", "", "")
   var
     tagged = newTagged()
@@ -68,3 +69,25 @@ proc createFiles*(extensionToPaths: Table[string, seq[string]], tagNames = newSe
         for tag in tags:
           tagged.tag = tag
           dbConn.insert(tagged, conflictPolicy=cpIgnore)
+
+proc updateTagName*(name, newName: string) =
+  let dbConn = open(mindDb, "", "", "")
+
+  dbConn.transaction:
+    try:
+      var oldTag = newTag(name)
+      dbConn.select(oldTag, "TagDao.name = ?", name)
+      try:
+        var newTag = newTag(newName)
+        dbConn.select(newTag, "TagDao.name = ?", newName)
+        try:
+          var tagds = @[newTagged(tag=oldTag)]
+          dbConn.select(tagds, "Tagged.tag = ?", oldTag)
+          for tagged in tagds: tagged.tag = newTag
+          dbConn.update tagds
+        except: discard
+        dbConn.delete(oldTag)
+      except:
+        oldTag.name = newName
+        dbConn.update oldTag
+    except: raise newException(ValueError, "Original tag doesn't exist!")

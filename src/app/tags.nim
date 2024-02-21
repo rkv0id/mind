@@ -3,8 +3,8 @@ from std/strutils import join
 from std/sequtils import toSeq
 from std/os import walkFiles, splitFile, createHardlink, joinPath
 
-from ../data/daos import createFiles
 from ../data/repository import hardFile
+from ../data/daos import createFiles, updateTagName
 
 
 proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
@@ -20,7 +20,7 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
 proc untagFiles*(filepattern: string, tags: seq[string]) =
   echo "untag " & filepattern & (if tags.len > 0: " by #" & $tags.join(" #") else: "")
 
-proc modTag*(name: string, newname: string) = echo "edit tag #" & name & " to " & newname
+proc modTag*(name: string, newname: string) = name.updateTagName newname
 
 proc removeTag*(tag: string, files: seq[string]) =
   if files.len == 0: echo "Removing tag " & tag
