@@ -39,8 +39,8 @@ proc createSchemas() =
   let dbConn = open(mindDb, "", "", "")
   dbConn.createTables newTagged()
 
-proc createFiles*(extensionToPaths: Table[string, seq[string]],
-                  tagNames = newSeq[string](), persistent = false) =
+proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
+                     tagNames = newSeq[string](), persistent = false) =
   let dbConn = open(mindDb, "", "", "")
   var
     tagged = newTagged()
@@ -51,12 +51,13 @@ proc createFiles*(extensionToPaths: Table[string, seq[string]],
   dbConn.transaction:
     for name in tagNames:
       var userTag = newTag(name)
-      try: dbConn.select(userTag, "TagDao.name = ?", name)
+      try: dbConn.select(userTag, "TagDao.name = ? and TagDao.system = 0", name)
       except: dbConn.insert(userTag, conflictPolicy=cpIgnore)
       tags.add userTag
 
     for ext in extensionToPaths.keys:
-      try: dbConn.select(sysTag, "TagDao.name = ?", ext)
+      sysTag.name = ext
+      try: dbConn.select(sysTag, "TagDao.name = ? and TagDao.system = 1", ext)
       except: dbConn.insert(sysTag, conflictPolicy=cpIgnore)
       for path in extensionToPaths[ext]:
         file.path = path
@@ -76,10 +77,10 @@ proc updateTagName*(name, newName: string) =
   dbConn.transaction:
     try:
       var oldTag = newTag(name)
-      dbConn.select(oldTag, "TagDao.name = ?", name)
+      dbConn.select(oldTag, "TagDao.name = ? and TagDao.system = 0", name)
       try:
         var newTag = newTag(newName)
-        dbConn.select(newTag, "TagDao.name = ?", newName)
+        dbConn.select(newTag, "TagDao.name = ? and TagDao.system = 0", newName)
         try:
           var tagds = @[newTagged(tag=oldTag)]
           dbConn.select(tagds, "Tagged.tag = ?", oldTag)
