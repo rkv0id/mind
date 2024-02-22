@@ -4,7 +4,7 @@ from std/sequtils import toSeq
 from std/os import walkFiles, splitFile, createHardlink, joinPath
 
 from ../data/repository import hardFile
-from ../data/daos import createFiles, updateTagName
+from ../data/daos import addTaggedFiles, updateTagName
 
 
 proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
@@ -15,7 +15,7 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
       newPath = if hard: hardFile(name & ext) else: path
     if hard: path.createHardlink newPath
     extensionToPaths[ext] = extensionToPaths.getOrDefault(ext, @[]) & newPath
-  createFiles(extensionToPaths, tags, hard)
+  addTaggedFiles(extensionToPaths, tags, hard)
 
 proc untagFiles*(filepattern: string, tags: seq[string]) =
   echo "untag " & filepattern & (if tags.len > 0: " by #" & $tags.join(" #") else: "")
