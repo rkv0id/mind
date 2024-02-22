@@ -22,9 +22,7 @@ proc untagFiles*(filepattern: string, tags: seq[string]) =
 
 proc modTag*(name: string, newname: string) = name.updateTagName newname
 
-proc removeTag*(tag: string, files: seq[string]) =
-  if files.len == 0: echo "Removing tag " & tag
-  else: echo "untag " & $files & " by #" & tag
+proc removeTag*(tags: seq[string]) = echo "Removing tags " & tags
 
 proc listTags*(tagpattern: string, system: bool, quiet: bool) =
   echo "show " & (if system: "system" else: "non-system") &
