@@ -83,7 +83,7 @@ proc updateTagName*(name, newName: string) =
         dbConn.select(newTag, "TagDao.name = ? and TagDao.system = 0", newName)
         try:
           var tagds = @[newTagged(tag=oldTag)]
-          dbConn.select(tagds, "Tagged.tag = ?", oldTag)
+          dbConn.selectOneToMany(oldTag, tagds)
           for tagged in tagds: tagged.tag = newTag
           dbConn.update tagds
         except: discard
