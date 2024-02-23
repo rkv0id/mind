@@ -1,7 +1,7 @@
 from std/os import getDataDir, joinPath, existsOrCreateDir
 
 
-const MindHomeDir = ".memoed"
+const MindHomeDir = ".mind"
 let
   mindDataDir = getDataDir().joinPath(MindHomeDir)
   mindFilesDir = mindDataDir.joinPath("files")
