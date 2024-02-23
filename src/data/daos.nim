@@ -89,12 +89,14 @@ proc updateTagName*(name, newName: string) =
         var newTag = newTag(newName)
         db.select(newTag, "TagDao.name = ? and TagDao.system = 0", newName)
         try:
-          var oldTagds, newTagds = @[newTagged()]
-          db.selectOneToMany(oldTag, oldTagds)
-          db.selectOneToMany(newTag, newTagds)
-          let newTaggedFiles = newTagds.mapIt it.file.path
+          var tagds = @[newTagged()]
+          db.selectOneToMany(newTag, tagds)
+          let newTaggedFiles = tagds.mapIt(it.file.path).toHashSet
+
+          tagds = @[newTagged()]
+          db.selectOneToMany(oldTag, tagds)
           var toUpdate, toDelete = newSeq[Tagged]()
-          for tagd in oldTagds:
+          for tagd in tagds:
             if tagd.file.path in newTaggedFiles: toDelete.add tagd
             else:
               tagd.tag = newTag
