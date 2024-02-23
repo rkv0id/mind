@@ -1,6 +1,6 @@
 import std/[sets, tables]
 from std/os import fileExists
-from std/sequtils import mapIt
+from std/sequtils import mapIt, toSeq
 from std/times import DateTime, now
 from std/options import Option, none, some
 
@@ -89,10 +89,18 @@ proc updateTagName*(name, newName: string) =
         var newTag = newTag(newName)
         db.select(newTag, "TagDao.name = ? and TagDao.system = 0", newName)
         try:
-          var tagds = @[newTagged(tag=oldTag)]
-          db.selectOneToMany(oldTag, tagds)
-          for tagged in tagds: tagged.tag = newTag
-          db.update tagds
+          var oldTagds, newTagds = @[newTagged()]
+          db.selectOneToMany(oldTag, oldTagds)
+          db.selectOneToMany(newTag, newTagds)
+          let newTaggedFiles = newTagds.mapIt it.file.path
+          var toUpdate, toDelete = newSeq[Tagged]()
+          for tagd in oldTagds:
+            if tagd.file.path in newTaggedFiles: toDelete.add tagd
+            else:
+              tagd.tag = newTag
+              toUpdate.add tagd
+          db.update toUpdate
+          db.delete toDelete
         except: discard
         db.delete(oldTag)
       except:
