@@ -7,6 +7,7 @@ import norm/sqlite
 from norm/model import Model, cpIgnore
 from norm/pragmas import uniqueGroup, uniqueIndex
 
+from ./repository import mindDbFile
 
 type
   FileDao = ref object of Model
@@ -33,7 +34,17 @@ func newTagged(file = newFile(), tag = newTag(), at = now()): Tagged =
   Tagged(file: file, tag: tag, at: at)
 
 
-proc createSchemas*() = withDb: db.createTables newTagged()
+template withMindDb*(body: untyped): untyped =
+  let db {.inject.} =
+    try: open("file://" & mindDbFile, "", "", "")
+    except: raise newException(IOError, "Could not establish connection to local database!")
+
+  try: body
+  finally: close db
+
+
+proc initDb() =
+  withMindDb: db.createTables newTagged()
 
 proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
                      tagNames = HashSet[string](), persistent = false) =
@@ -43,7 +54,7 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
     file = newFile(persistent=persistent)
     tags: seq[TagDao]
     
-  withDb: db.transaction:
+  withMindDb: db.transaction:
     for name in tagNames:
       var userTag = newTag(name)
       try: db.select(userTag, "TagDao.name = ? and TagDao.system = 0", name)
@@ -67,7 +78,7 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
           db.insert(tagged, conflictPolicy=cpIgnore)
 
 proc updateTagName*(name, newName: string) =
-  withDb: db.transaction:
+  withMindDb: db.transaction:
     try:
       var oldTag = newTag(name)
       db.select(oldTag, "TagDao.name = ? and TagDao.system = 0", name)
@@ -87,7 +98,7 @@ proc updateTagName*(name, newName: string) =
     except: raise newException(ValueError, "Could not find original tag entry!")
 
 proc updateTagDesc*(name, description: string) =
-  withDb: db.transaction:
+  withMindDb: db.transaction:
     var tag = newTag(name)
     try:
       db.select(tag, "TagDao.name = ? and TagDao.system = 0", tag.name)
@@ -100,7 +111,7 @@ proc deleteTags*(tagNames: HashSet[string]) =
     tag = newTag()
     tagds = @[newTagged()]
 
-  withDb: db.transaction:
+  withMindDb: db.transaction:
     for name in tagNames:
       tag.name = name
       try:
@@ -113,5 +124,5 @@ proc deleteTags*(tagNames: HashSet[string]) =
 
 proc readTags*(system = false): seq[string] =
   var tags = @[newTag()]
-  withDb: db.transaction: db.select(tags, "TagDao.system = ?", system)
+  withMindDb: db.transaction: db.select(tags, "TagDao.system = ?", system)
   tags.mapIt(it.name)
