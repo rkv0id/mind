@@ -129,4 +129,4 @@ proc deleteTags*(tagNames: HashSet[string]) =
 proc readTags*(system = false): seq[string] =
   var tags = @[newTag()]
   withMindDb: db.transaction: db.select(tags, "TagDao.system = ?", system)
-  tags.mapIt(it.name)
+  tags.mapIt(it.name & " " & it.desc)
