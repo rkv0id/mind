@@ -26,7 +26,8 @@ proc untagFiles*(filepattern: string, tags: seq[string]) =
 
 proc modTag*(name: string, newname: string) = name.updateTagName newname
 
-proc describeTag*(tag: string, description: string) = discard
+proc describeTag*(tag: string, description: string) =
+  updateTagDesc(tag, description)
 
 proc removeTag*(tags: seq[string]) = deleteTags tags.toHashSet
 
