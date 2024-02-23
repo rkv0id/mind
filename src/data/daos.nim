@@ -1,4 +1,5 @@
 import std/[sets, tables]
+from std/os import fileExists
 from std/sequtils import mapIt
 from std/times import DateTime, now
 from std/options import Option, none, some
@@ -7,7 +8,7 @@ import norm/sqlite
 from norm/model import Model, cpIgnore
 from norm/pragmas import uniqueGroup, uniqueIndex
 
-from ./repository import mindDbFile
+from ./repository import mindDbFile, checkRepo
 
 type
   FileDao = ref object of Model
@@ -35,16 +36,17 @@ func newTagged(file = newFile(), tag = newTag(), at = now()): Tagged =
 
 
 template withMindDb*(body: untyped): untyped =
-  let db {.inject.} =
-    try: open("file://" & mindDbFile, "", "", "")
-    except: raise newException(IOError, "Could not establish connection to local database!")
-
-  try: body
+  checkRepo()
+  let
+    init = not mindDbFile.fileExists
+    db {.inject.} =
+      try: open("file://" & mindDbFile, "", "", "")
+      except: raise newException(IOError, "Could not establish connection to local database!")
+  
+  try:
+    if init: db.createTables newTagged()
+    body
   finally: close db
-
-
-proc initDb() =
-  withMindDb: db.createTables newTagged()
 
 proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
                      tagNames = HashSet[string](), persistent = false) =
