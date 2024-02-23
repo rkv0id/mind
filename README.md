@@ -5,9 +5,9 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 
 ### TODOs
 
-- [ ] Tags support
-- [ ] Files sym and hard links
+- [ ] Files and Tags logic
 - [ ] Synchronise hard and sym links
-- [ ] Backups (compression and auto-backups)
+- [ ] Full exception handling
 - [ ] Some CLI visual work
-- [ ] Lookup DSL
+- [ ] Backups (compression and auto-backups)
+- [ ] Full Lookup DSL
