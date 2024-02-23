@@ -18,6 +18,7 @@ Usage:
   mind tag [-H] <filepattern> <tags>...
   mind untag <filepattern> [<tags>...]
   mind mv <name> <newname>
+  mind desc <tag> <description>
   mind rm <tags>...
   mind find [-t=<level>] <query>
 
@@ -39,5 +40,6 @@ when isMainModule:
   args.dispatchProc(tagFiles, "tag")
   args.dispatchProc(untagFiles, "untag")
   args.dispatchProc(modTag, "mv")
+  args.dispatchProc(describeTag, "desc")
   args.dispatchProc(removeTag, "rm")
   args.dispatchProc(find, "find")
