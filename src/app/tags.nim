@@ -13,7 +13,7 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
     let
       splitHolder = path.splitFile
       name = splitHolder.name
-      ext = "sys/" & (if splitHolder.ext.isEmptyOrWhitespace: "plain" else: splitHolder.ext)
+      ext = "sys[" & splitHolder.ext & "]"
       newPath = if hard: hardFile(name & splitHolder.ext) else: path
     if hard: path.createHardlink newPath
     extensionToPaths[ext] = extensionToPaths.getOrDefault(ext, @[]) & newPath
