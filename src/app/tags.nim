@@ -1,6 +1,6 @@
 import std/tables
-from std/strutils import join
 from std/sequtils import toSeq
+from std/strutils import join, isEmptyOrWhitespace
 from std/os import walkFiles, splitFile, createHardlink, joinPath
 
 from ../data/repository import hardFile
@@ -11,8 +11,10 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
   var extensionToPaths: Table[string, seq[string]]
   for path in filepattern.walkFiles.toSeq:
     let
-      (_, name, ext) = path.splitFile
-      newPath = if hard: hardFile(name & ext) else: path
+      splitHolder = path.splitFile
+      name = splitHolder.name
+      ext = "sys/" & (if splitHolder.ext.isEmptyOrWhitespace: "plain" else: splitHolder.ext)
+      newPath = if hard: hardFile(name & splitHolder.ext) else: path
     if hard: path.createHardlink newPath
     extensionToPaths[ext] = extensionToPaths.getOrDefault(ext, @[]) & newPath
   addTaggedFiles(extensionToPaths, tags, hard)
