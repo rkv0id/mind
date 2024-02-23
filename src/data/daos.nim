@@ -51,32 +51,33 @@ template withMindDb*(body: untyped): untyped =
 proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
                      tagNames = HashSet[string](), persistent = false) =
   var
-    tagged = newTagged()
-    sysTag = newTag(system=true)
-    file = newFile(persistent=persistent)
+    at = now()
+    tagged: Tagged
+    sysTag: TagDao
+    userTag: TagDao
+    file: FileDao
     tags: seq[TagDao]
     
   withMindDb: db.transaction:
     for name in tagNames:
-      var userTag = newTag(name)
+      userTag = newTag(name)
       try: db.select(userTag, "TagDao.name = ? and TagDao.system = 0", name)
       except: db.insert(userTag, conflictPolicy=cpIgnore)
       tags.add userTag
 
     for ext in extensionToPaths.keys:
-      sysTag.name = ext
+      sysTag = newTag(ext, true)
       try: db.select(sysTag, "TagDao.name = ? and TagDao.system = 1", ext)
       except: db.insert(sysTag, conflictPolicy=cpIgnore)
       for path in extensionToPaths[ext]:
-        file.path = path
+        file = newFile(path, persistent)
         try: db.select(file, "FileDao.path = ?", path)
         except:
           db.insert(file, conflictPolicy=cpIgnore)
-          tagged.tag = sysTag
-          tagged.file = file
+          tagged = newTagged(file, sysTag, at)
           db.insert(tagged, conflictPolicy=cpIgnore)
         for tag in tags:
-          tagged.tag = tag
+          tagged = newTagged(file, tag)
           db.insert(tagged, conflictPolicy=cpIgnore)
 
 proc updateTagName*(name, newName: string) =
@@ -110,12 +111,13 @@ proc updateTagDesc*(name, description: string) =
 
 proc deleteTags*(tagNames: HashSet[string]) =
   var
-    tag = newTag()
-    tagds = @[newTagged()]
+    tag: TagDao
+    tagds: seq[Tagged]
 
   withMindDb: db.transaction:
     for name in tagNames:
-      tag.name = name
+      tag = newTag(name)
+      tagds = @[newTagged()]
       try:
         db.select(tag, "TagDao.name = ? and TagDao.system = 0", tag.name)
         db.selectOneToMany(tag, tagds)
