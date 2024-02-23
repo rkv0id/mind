@@ -1,12 +1,11 @@
-import std/tables
+import std/[sets, tables]
+from std/sequtils import mapIt
 from std/times import DateTime, now
 from std/options import Option, none, some
 
 import norm/sqlite
 from norm/model import Model, cpIgnore
 from norm/pragmas import uniqueGroup, uniqueIndex
-
-from ./repository import mindDbFile
 
 
 type
@@ -17,6 +16,7 @@ type
   TagDao = ref object of Model
     name {.uniqueIndex: "Tag_names".}: string
     system: bool
+    desc: string
   
   Tagged = ref object of Model
     file {.uniqueGroup.}: FileDao
@@ -26,69 +26,92 @@ type
 func newFile(path = "", persistent = false): FileDao =
   FileDao(path: path, persistent: persistent)
 
-func newTag(name = "", system = false): TagDao =
-  TagDao(name: name, system: system)
+func newTag(name = "", system = false, desc = ""): TagDao =
+  TagDao(name: name, system: system, desc: desc)
 
 func newTagged(file = newFile(), tag = newTag(), at = now()): Tagged =
   Tagged(file: file, tag: tag, at: at)
 
 
-let mindDb = "file://" & mindDbFile
-
-proc createSchemas() =
-  let dbConn = open(mindDb, "", "", "")
-  dbConn.createTables newTagged()
+proc createSchemas*() = withDb: db.createTables newTagged()
 
 proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
-                     tagNames = newSeq[string](), persistent = false) =
-  let dbConn = open(mindDb, "", "", "")
+                     tagNames = HashSet[string](), persistent = false) =
   var
     tagged = newTagged()
     sysTag = newTag(system=true)
     file = newFile(persistent=persistent)
     tags: seq[TagDao]
-  
-  dbConn.transaction:
+    
+  withDb: db.transaction:
     for name in tagNames:
       var userTag = newTag(name)
-      try: dbConn.select(userTag, "TagDao.name = ? and TagDao.system = 0", name)
-      except: dbConn.insert(userTag, conflictPolicy=cpIgnore)
+      try: db.select(userTag, "TagDao.name = ? and TagDao.system = 0", name)
+      except: db.insert(userTag, conflictPolicy=cpIgnore)
       tags.add userTag
 
     for ext in extensionToPaths.keys:
       sysTag.name = ext
-      try: dbConn.select(sysTag, "TagDao.name = ? and TagDao.system = 1", ext)
-      except: dbConn.insert(sysTag, conflictPolicy=cpIgnore)
+      try: db.select(sysTag, "TagDao.name = ? and TagDao.system = 1", ext)
+      except: db.insert(sysTag, conflictPolicy=cpIgnore)
       for path in extensionToPaths[ext]:
         file.path = path
-        try: dbConn.select(file, "FileDao.path = ?", path)
+        try: db.select(file, "FileDao.path = ?", path)
         except:
-          dbConn.insert(file, conflictPolicy=cpIgnore)
+          db.insert(file, conflictPolicy=cpIgnore)
           tagged.tag = sysTag
           tagged.file = file
-          dbConn.insert(tagged, conflictPolicy=cpIgnore)
+          db.insert(tagged, conflictPolicy=cpIgnore)
         for tag in tags:
           tagged.tag = tag
-          dbConn.insert(tagged, conflictPolicy=cpIgnore)
+          db.insert(tagged, conflictPolicy=cpIgnore)
 
 proc updateTagName*(name, newName: string) =
-  let dbConn = open(mindDb, "", "", "")
-
-  dbConn.transaction:
+  withDb: db.transaction:
     try:
       var oldTag = newTag(name)
-      dbConn.select(oldTag, "TagDao.name = ? and TagDao.system = 0", name)
+      db.select(oldTag, "TagDao.name = ? and TagDao.system = 0", name)
       try:
         var newTag = newTag(newName)
-        dbConn.select(newTag, "TagDao.name = ? and TagDao.system = 0", newName)
+        db.select(newTag, "TagDao.name = ? and TagDao.system = 0", newName)
         try:
           var tagds = @[newTagged(tag=oldTag)]
-          dbConn.selectOneToMany(oldTag, tagds)
+          db.selectOneToMany(oldTag, tagds)
           for tagged in tagds: tagged.tag = newTag
-          dbConn.update tagds
+          db.update tagds
         except: discard
-        dbConn.delete(oldTag)
+        db.delete(oldTag)
       except:
         oldTag.name = newName
-        dbConn.update oldTag
-    except: raise newException(ValueError, "Original tag doesn't exist!")
+        db.update oldTag
+    except: raise newException(ValueError, "Could not find original tag entry!")
+
+proc updateTagDesc*(name, description: string) =
+  withDb: db.transaction:
+    var tag = newTag(name)
+    try:
+      db.select(tag, "TagDao.name = ? and TagDao.system = 0", tag.name)
+      tag.desc = description
+      db.update tag
+    except: raise newException(ValueError, "Could not find tag entry!")
+
+proc deleteTags*(tagNames: HashSet[string]) =
+  var
+    tag = newTag()
+    tagds = @[newTagged()]
+
+  withDb: db.transaction:
+    for name in tagNames:
+      tag.name = name
+      try:
+        db.select(tag, "TagDao.name = ? and TagDao.system = 0", tag.name)
+        db.selectOneToMany(tag, tagds)
+      except: discard
+      finally:
+        db.delete tagds
+        db.delete tag
+
+proc readTags*(system = false): seq[string] =
+  var tags = @[newTag()]
+  withDb: db.transaction: db.select(tags, "TagDao.system = ?", system)
+  tags.mapIt(it.name)
