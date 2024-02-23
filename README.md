@@ -7,7 +7,8 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 
 - [ ] Files and Tags logic
 - [ ] Synchronise hard and sym links
-- [ ] Full exception handling
+- [ ] Full exception handling + Documentation
 - [ ] Some CLI visual work
 - [ ] Backups (compression and auto-backups)
 - [ ] Full Lookup DSL
+- [ ] Testing :tired_face:
