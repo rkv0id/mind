@@ -111,10 +111,16 @@ proc deleteTags*(tagNames: HashSet[string]) =
       try:
         db.select(tag, "Tag.name = ? and Tag.system = 0", tag.name)
         db.selectOneToMany(tag, tagds)
-      except: discard
-      finally:
         db.delete tagds
         db.delete tag
+      except: discard
+
+proc deleteFiles(paths: seq[string]) =
+  var fileHolder = newFile()
+  withMindDb: db.transaction:
+    for path in paths:
+      try: db.select(fileHolder, "File.path = ?", path)
+      except: discard
 
 proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
                      tagNames = HashSet[string](), persistent = false) =
