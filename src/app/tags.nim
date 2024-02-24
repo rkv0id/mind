@@ -1,6 +1,6 @@
 import std/[sets, tables]
-from std/strutils import join, alignLeft, `%`
 from std/sequtils import toSeq, filterIt, foldl, mapIt
+from std/strutils import join, alignLeft, `%`, isEmptyOrWhitespace
 from std/os import walkFiles, splitFile, createHardlink, joinPath, absolutePath
 
 from regex import re2, match
@@ -23,7 +23,8 @@ proc listTags*(tagpattern: string, system: bool, quiet: bool) =
       it.desc]).join("\n")
   else: echo matched.mapIt(it.name).join("\n")
 
-proc modTag*(name: string, newname: string) = name.updateTagName newname
+proc modTag*(name: string, newname: string) =
+  if name != newname: name.updateTagName newname
 
 proc describeTag*(tag: string, description: string) =
   updateTagDesc(tag, description)
