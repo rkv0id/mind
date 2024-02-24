@@ -20,7 +20,7 @@ type
     system: bool
     desc: string
   
-  Tagged = ref object of Model
+  FileTag = ref object of Model
     file {.uniqueGroup.}: File
     tag {.uniqueGroup.}: Tag
     at: DateTime
@@ -31,8 +31,8 @@ func newFile(path = "", persistent = false): File =
 func newTag(name = "", system = false, desc = ""): Tag =
   Tag(name: name, system: system, desc: desc)
 
-func newTagged(file = newFile(), tag = newTag(), at = now()): Tagged =
-  Tagged(file: file, tag: tag, at: at)
+func newFileTag(file = newFile(), tag = newTag(), at = now()): FileTag =
+  FileTag(file: file, tag: tag, at: at)
 
 
 template withMindDb*(body: untyped): untyped =
@@ -44,7 +44,7 @@ template withMindDb*(body: untyped): untyped =
       except: raise newException(IOError, "Could not establish connection to local database!")
   
   try:
-    if init: db.createTables newTagged()
+    if init: db.createTables newFileTag()
     body
   finally: close db
 
@@ -62,16 +62,16 @@ proc updateTagName*(name, newName: string) =
         var newTag = newTag(newName)
         db.select(newTag, "Tag.name = ? and Tag.system = 0", newName)
         try:
-          var tagds = @[newTagged()]
+          var tagds = @[newFileTag()]
           db.select(tagds, """
-          Tagged.tag = ? AND EXISTS (
-            SELECT 1 from Tagged new
+          FileTag.tag = ? AND EXISTS (
+            SELECT 1 from FileTag new
             WHERE new.tag = ?
-            AND new.file = Tagged.file
+            AND new.file = FileTag.file
           )""", oldTag, newTag)
           db.delete(tagds)
           
-          tagds = @[newTagged()]
+          tagds = @[newFileTag()]
           db.selectOneToMany(oldTag, tagds)
           for tagd in tagds: tagd.tag = newTag
           db.update tagds
@@ -94,12 +94,12 @@ proc updateTagDesc*(name, description: string) =
 proc deleteTags*(tagNames: HashSet[string]) =
   var
     tag: Tag
-    tagds: seq[Tagged]
+    tagds: seq[FileTag]
 
   withMindDb: db.transaction:
     for name in tagNames:
       tag = newTag(name)
-      tagds = @[newTagged()]
+      tagds = @[newFileTag()]
       try:
         db.select(tag, "Tag.name = ? and Tag.system = 0", tag.name)
         db.selectOneToMany(tag, tagds)
@@ -112,12 +112,12 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
                      tagNames = HashSet[string](), persistent = false) =
   var
     at = now()
-    tagged: Tagged
+    tagged: FileTag
     sysTag: Tag
     userTag: Tag
     file: File
     tags: seq[Tag]
-    
+
   withMindDb: db.transaction:
     for name in tagNames:
       userTag = newTag(name)
@@ -134,8 +134,8 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
         try: db.select(file, "File.path = ?", path)
         except:
           db.insert(file, conflictPolicy=cpIgnore)
-          tagged = newTagged(file, sysTag, at)
+          tagged = newFileTag(file, sysTag, at)
           db.insert(tagged, conflictPolicy=cpIgnore)
         for tag in tags:
-          tagged = newTagged(file, tag)
+          tagged = newFileTag(file, tag)
           db.insert(tagged, conflictPolicy=cpIgnore)
