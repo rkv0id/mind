@@ -12,3 +12,7 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 - [ ] Backups (compression and auto-backups)
 - [ ] Full Lookup DSL
 - [ ] Testing :tired_face:
+- [ ] Memos support
+- [ ] Tasks and TODO lists
+- [ ] Key-value store (with optional encryption)
+- [ ] Behaviour configuration and defaults
