@@ -1,3 +1,4 @@
+import regex
 import std/[sets, tables]
 from std/os import fileExists
 from std/times import DateTime, now
@@ -48,10 +49,10 @@ template withMindDb*(body: untyped): untyped =
     body
   finally: close db
 
-proc readTags*(system = false): seq[string] =
+proc readTags*(system = false): seq[tuple[name, desc: string]] =
   var tags = @[newTag()]
   withMindDb: db.transaction: db.select(tags, "Tag.system = ?", system)
-  tags.mapIt(it.name & " " & it.desc)
+  tags.mapIt((name: it.name, desc: it.desc))
 
 proc updateTagName*(name, newName: string) =
   withMindDb: db.transaction:
@@ -128,7 +129,7 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
     for ext in extensionToPaths.keys:
       sysTag = newTag("sys[" & ext & "]", true,
                       "Tracks all tagged " & (
-                        if ext.isEmptyOrWhitespace: ext
+                        if not ext.isEmptyOrWhitespace: ext
                         else: "extensionless"
                       ) & " files.")
       try: db.select(sysTag, "Tag.name = ? and Tag.system = 1", sysTag.name)
