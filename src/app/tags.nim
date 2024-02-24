@@ -1,6 +1,7 @@
 import std/[sets, tables]
+from std/strutils import join
 from std/sequtils import toSeq
-from std/os import walkFiles, splitFile, createHardlink, joinPath
+from std/os import walkFiles, splitFile, createHardlink, joinPath, absolutePath
 
 from ../data/repository import hardFile
 from ../data/entities import addTaggedFiles, updateTagName,
@@ -12,7 +13,7 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
   for path in filepattern.walkFiles.toSeq:
     let
       (_, name, ext) = path.splitFile
-      newPath = if hard: hardFile(name & ext) else: path
+      newPath = if hard: hardFile(name & ext) else: path.absolutePath
     if hard: path.createHardlink newPath
     extensionToPaths[ext] = extensionToPaths.getOrDefault(ext, @[]) & newPath
   addTaggedFiles(extensionToPaths, tags.toHashSet, hard)
