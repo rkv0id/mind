@@ -6,8 +6,9 @@ from std/os import walkFiles, splitFile, createHardlink, joinPath, absolutePath
 from regex import re2, match
 
 from ../data/repository import hardFile
-from ../data/entities import addTaggedFiles, updateTagName,
-                             deleteTags, updateTagDesc, readTags
+from ../data/entities import addTaggedFiles, deleteTags, deleteFiles,
+                             updateTagName, updateTagDesc, readTags,
+                             deleteTagsFromFiles
 
 
 proc listTags*(tagpattern: string, system: bool, quiet: bool) =
@@ -15,13 +16,14 @@ proc listTags*(tagpattern: string, system: bool, quiet: bool) =
     if tagpattern == "nil": readTags system
     else: readTags(system).filterIt(it.name.match re2(tagpattern))
   
-  if not quiet:
-    let tagLen = matched.foldl(max(a, b.name.len), 0)
-    echo matched.mapIt("$1\t$2 file(s)\t$3" % [
-      it.name.alignLeft(tagLen),
-      $it.count,
-      it.desc]).join("\n")
-  else: echo matched.mapIt(it.name).join("\n")
+  if matched.len > 0:
+    if not quiet:
+      let tagLen = matched.foldl(max(a, b.name.len), 0)
+      echo matched.mapIt("$1\t$2 file(s)\t$3" % [
+        it.name.alignLeft(tagLen),
+        $it.count,
+        it.desc]).join("\n")
+    else: echo matched.mapIt(it.name).join("\n")
 
 proc modTag*(name: string, newname: string) =
   if name != newname: name.updateTagName newname
@@ -44,6 +46,9 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
 proc untagFiles*(filepattern: string, tags: seq[string]) =
   ## TODO
   echo "untag " & filepattern & (if tags.len > 0: " by #" & $tags.join(" #") else: "")
+  let files = filepattern.walkFiles.toSeq.mapIt it.absolutePath
+  if tags.len == 0: deleteFiles files
+  else: deleteTagsFromFiles(files, tags.toHashSet)
 
 proc find*(query: string, tree: int, sync: bool) =
   ## TODO

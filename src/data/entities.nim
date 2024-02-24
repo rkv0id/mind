@@ -1,7 +1,7 @@
 import std/[sets, tables]
-from std/os import fileExists
 from std/sequtils import mapIt
 from std/times import DateTime, now
+from std/os import fileExists, removeFile
 from std/strutils import isEmptyOrWhitespace
 
 import norm/sqlite
@@ -92,35 +92,12 @@ proc updateTagName*(name, newName: string) =
 
 proc updateTagDesc*(name, description: string) =
   withMindDb: db.transaction:
-    var tag = newTag(name)
+    var tag = newTag()
     try:
-      db.select(tag, "Tag.name = ? and Tag.system = 0", tag.name)
+      db.select(tag, "Tag.name = ? and Tag.system = 0", name)
       tag.desc = description
       db.update tag
     except: raise newException(ValueError, "Could not find tag entry!")
-
-proc deleteTags*(tagNames: HashSet[string]) =
-  var
-    tag: Tag
-    tagds: seq[FileTag]
-
-  withMindDb: db.transaction:
-    for name in tagNames:
-      tag = newTag(name)
-      tagds = @[newFileTag()]
-      try:
-        db.select(tag, "Tag.name = ? and Tag.system = 0", tag.name)
-        db.selectOneToMany(tag, tagds)
-        db.delete tagds
-        db.delete tag
-      except: discard
-
-proc deleteFiles(paths: seq[string]) =
-  var fileHolder = newFile()
-  withMindDb: db.transaction:
-    for path in paths:
-      try: db.select(fileHolder, "File.path = ?", path)
-      except: discard
 
 proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
                      tagNames = HashSet[string](), persistent = false) =
@@ -157,3 +134,38 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
         for tag in tags:
           tagged = newFileTag(file, tag)
           db.insert(tagged, conflictPolicy=cpIgnore)
+
+proc deleteTags*(tagNames: HashSet[string]) =
+  var
+    tag: Tag
+    tagds: seq[FileTag]
+
+  withMindDb: db.transaction:
+    for name in tagNames:
+      try:
+        tag = newTag()
+        db.select(tag, "Tag.name = ? and Tag.system = 0", name)
+        tagds = @[newFileTag()]
+        db.selectOneToMany(tag, tagds)
+        db.delete tagds
+        db.delete tag
+      except: discard
+
+proc deleteFiles*(paths: seq[string]) =
+  var
+    file: File
+    tagds: seq[FileTag]
+
+  withMindDb: db.transaction:
+    for path in paths:
+      try:
+        file = newFile()
+        db.select(file, "File.path = ?", path)
+        tagds = @[newFileTag()]
+        db.selectOneToMany(file, tagds)
+        db.delete tagds
+        if file.persistent: removeFile file.path
+        db.delete file
+      except: discard
+
+proc deleteTagsFromFiles*(paths: seq[string], tagNames: HashSet[string]) = discard
