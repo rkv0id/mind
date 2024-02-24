@@ -4,9 +4,8 @@ from std/strutils import join, isEmptyOrWhitespace
 from std/os import walkFiles, splitFile, createHardlink, joinPath
 
 from ../data/repository import hardFile
-from ../data/daos import addTaggedFiles, updateTagName,
-                         deleteTags, updateTagDesc,
-                         readTags
+from ../data/entities import addTaggedFiles, updateTagName,
+                             deleteTags, updateTagDesc, readTags
 
 
 proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =

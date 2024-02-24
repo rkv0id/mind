@@ -6,30 +6,30 @@ from std/options import Option, none, some
 
 import norm/sqlite
 from norm/model import Model, cpIgnore
-from norm/pragmas import uniqueGroup, uniqueIndex
+from norm/pragmas import uniqueGroup, uniqueIndex, tableName
 
 from ./repository import mindDbFile, checkRepo
 
 type
-  FileDao = ref object of Model
+  File = ref object of Model
     path {.uniqueIndex: "File_paths".}: string
     persistent: bool
 
-  TagDao = ref object of Model
+  Tag = ref object of Model
     name {.uniqueIndex: "Tag_names".}: string
     system: bool
     desc: string
   
   Tagged = ref object of Model
-    file {.uniqueGroup.}: FileDao
-    tag {.uniqueGroup.}: TagDao
+    file {.uniqueGroup.}: File
+    tag {.uniqueGroup.}: Tag
     at: DateTime
 
-func newFile(path = "", persistent = false): FileDao =
-  FileDao(path: path, persistent: persistent)
+func newFile(path = "", persistent = false): File =
+  File(path: path, persistent: persistent)
 
-func newTag(name = "", system = false, desc = ""): TagDao =
-  TagDao(name: name, system: system, desc: desc)
+func newTag(name = "", system = false, desc = ""): Tag =
+  Tag(name: name, system: system, desc: desc)
 
 func newTagged(file = newFile(), tag = newTag(), at = now()): Tagged =
   Tagged(file: file, tag: tag, at: at)
@@ -48,46 +48,19 @@ template withMindDb*(body: untyped): untyped =
     body
   finally: close db
 
-proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
-                     tagNames = HashSet[string](), persistent = false) =
-  var
-    at = now()
-    tagged: Tagged
-    sysTag: TagDao
-    userTag: TagDao
-    file: FileDao
-    tags: seq[TagDao]
-    
-  withMindDb: db.transaction:
-    for name in tagNames:
-      userTag = newTag(name)
-      try: db.select(userTag, "TagDao.name = ? and TagDao.system = 0", name)
-      except: db.insert(userTag, conflictPolicy=cpIgnore)
-      tags.add userTag
-
-    for ext in extensionToPaths.keys:
-      sysTag = newTag(ext, true)
-      try: db.select(sysTag, "TagDao.name = ? and TagDao.system = 1", ext)
-      except: db.insert(sysTag, conflictPolicy=cpIgnore)
-      for path in extensionToPaths[ext]:
-        file = newFile(path, persistent)
-        try: db.select(file, "FileDao.path = ?", path)
-        except:
-          db.insert(file, conflictPolicy=cpIgnore)
-          tagged = newTagged(file, sysTag, at)
-          db.insert(tagged, conflictPolicy=cpIgnore)
-        for tag in tags:
-          tagged = newTagged(file, tag)
-          db.insert(tagged, conflictPolicy=cpIgnore)
+proc readTags*(system = false): seq[string] =
+  var tags = @[newTag()]
+  withMindDb: db.transaction: db.select(tags, "Tag.system = ?", system)
+  tags.mapIt(it.name & " " & it.desc)
 
 proc updateTagName*(name, newName: string) =
   withMindDb: db.transaction:
     try:
       var oldTag = newTag(name)
-      db.select(oldTag, "TagDao.name = ? and TagDao.system = 0", name)
+      db.select(oldTag, "Tag.name = ? and Tag.system = 0", name)
       try:
         var newTag = newTag(newName)
-        db.select(newTag, "TagDao.name = ? and TagDao.system = 0", newName)
+        db.select(newTag, "Tag.name = ? and Tag.system = 0", newName)
         try:
           var tagds = @[newTagged()]
           db.select(tagds, """
@@ -113,14 +86,14 @@ proc updateTagDesc*(name, description: string) =
   withMindDb: db.transaction:
     var tag = newTag(name)
     try:
-      db.select(tag, "TagDao.name = ? and TagDao.system = 0", tag.name)
+      db.select(tag, "Tag.name = ? and Tag.system = 0", tag.name)
       tag.desc = description
       db.update tag
     except: raise newException(ValueError, "Could not find tag entry!")
 
 proc deleteTags*(tagNames: HashSet[string]) =
   var
-    tag: TagDao
+    tag: Tag
     tagds: seq[Tagged]
 
   withMindDb: db.transaction:
@@ -128,14 +101,41 @@ proc deleteTags*(tagNames: HashSet[string]) =
       tag = newTag(name)
       tagds = @[newTagged()]
       try:
-        db.select(tag, "TagDao.name = ? and TagDao.system = 0", tag.name)
+        db.select(tag, "Tag.name = ? and Tag.system = 0", tag.name)
         db.selectOneToMany(tag, tagds)
       except: discard
       finally:
         db.delete tagds
         db.delete tag
 
-proc readTags*(system = false): seq[string] =
-  var tags = @[newTag()]
-  withMindDb: db.transaction: db.select(tags, "TagDao.system = ?", system)
-  tags.mapIt(it.name & " " & it.desc)
+proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
+                     tagNames = HashSet[string](), persistent = false) =
+  var
+    at = now()
+    tagged: Tagged
+    sysTag: Tag
+    userTag: Tag
+    file: File
+    tags: seq[Tag]
+    
+  withMindDb: db.transaction:
+    for name in tagNames:
+      userTag = newTag(name)
+      try: db.select(userTag, "Tag.name = ? and Tag.system = 0", name)
+      except: db.insert(userTag, conflictPolicy=cpIgnore)
+      tags.add userTag
+
+    for ext in extensionToPaths.keys:
+      sysTag = newTag(ext, true)
+      try: db.select(sysTag, "Tag.name = ? and Tag.system = 1", ext)
+      except: db.insert(sysTag, conflictPolicy=cpIgnore)
+      for path in extensionToPaths[ext]:
+        file = newFile(path, persistent)
+        try: db.select(file, "File.path = ?", path)
+        except:
+          db.insert(file, conflictPolicy=cpIgnore)
+          tagged = newTagged(file, sysTag, at)
+          db.insert(tagged, conflictPolicy=cpIgnore)
+        for tag in tags:
+          tagged = newTagged(file, tag)
+          db.insert(tagged, conflictPolicy=cpIgnore)
