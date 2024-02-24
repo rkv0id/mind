@@ -48,10 +48,18 @@ template withMindDb*(body: untyped): untyped =
     body
   finally: close db
 
-proc readTags*(system = false): seq[tuple[name, desc: string]] =
-  var tags = @[newTag()]
-  withMindDb: db.transaction: db.select(tags, "Tag.system = ?", system)
-  tags.mapIt((name: it.name, desc: it.desc))
+proc readTags*(system = false): seq[tuple[name, desc: string, count: int64]] =
+  var
+    tags = @[newTag()]
+    count: Table[string, int64]
+
+  withMindDb: db.transaction:
+    db.select(tags, "Tag.system = ?", system)
+    for tag in tags:
+      count[tag.name] =
+        db.count(FileTag, cond = "FileTag.tag = ?", params = tag)
+  
+  tags.mapIt((name: it.name, desc: it.desc, count: count[it.name]))
 
 proc updateTagName*(name, newName: string) =
   withMindDb: db.transaction:
