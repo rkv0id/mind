@@ -1,12 +1,12 @@
 import std/[sets, tables]
 from std/os import fileExists
-from std/sequtils import mapIt, toSeq
 from std/times import DateTime, now
-from std/options import Option, none, some
+from std/sequtils import mapIt
+from std/strutils import isEmptyOrWhitespace
 
 import norm/sqlite
 from norm/model import Model, cpIgnore
-from norm/pragmas import uniqueGroup, uniqueIndex, tableName
+from norm/pragmas import uniqueGroup, uniqueIndex
 
 from ./repository import mindDbFile, checkRepo
 
@@ -126,8 +126,12 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
       tags.add userTag
 
     for ext in extensionToPaths.keys:
-      sysTag = newTag(ext, true)
-      try: db.select(sysTag, "Tag.name = ? and Tag.system = 1", ext)
+      sysTag = newTag("sys[" & ext & "]", true,
+                      "Tracks all tagged " & (
+                        if ext.isEmptyOrWhitespace: ext
+                        else: "extensionless"
+                      ) & " files.")
+      try: db.select(sysTag, "Tag.name = ? and Tag.system = 1", sysTag.name)
       except: db.insert(sysTag, conflictPolicy=cpIgnore)
       for path in extensionToPaths[ext]:
         file = newFile(path, persistent)

@@ -1,6 +1,5 @@
 import std/[sets, tables]
 from std/sequtils import toSeq
-from std/strutils import join, isEmptyOrWhitespace
 from std/os import walkFiles, splitFile, createHardlink, joinPath
 
 from ../data/repository import hardFile
@@ -12,10 +11,8 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
   var extensionToPaths: Table[string, seq[string]]
   for path in filepattern.walkFiles.toSeq:
     let
-      splitHolder = path.splitFile
-      name = splitHolder.name
-      ext = "sys[" & splitHolder.ext & "]"
-      newPath = if hard: hardFile(name & splitHolder.ext) else: path
+      (_, name, ext) = path.splitFile
+      newPath = if hard: hardFile(name & ext) else: path
     if hard: path.createHardlink newPath
     extensionToPaths[ext] = extensionToPaths.getOrDefault(ext, @[]) & newPath
   addTaggedFiles(extensionToPaths, tags.toHashSet, hard)
@@ -39,6 +36,6 @@ proc syncTags*(yes: bool) =
   echo "sync tags" &
     (if yes: " applying updates" else: " suggestions") & "."
 
-proc find*(query:string, tree: int) =
+proc find*(query: string, tree: int) =
   echo "show tagged files according to query: " & query & " at a " &
     (if tree == 0: "flat" else: $tree & "-tree") & " listing."
