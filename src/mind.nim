@@ -1,7 +1,7 @@
 import docopt
 import docopt/dispatch
 
-import app/[tags, queries]
+import app/tags
 
 
 const doc = """
