@@ -1,8 +1,7 @@
-import regex
 import std/[sets, tables]
 from std/os import fileExists
-from std/times import DateTime, now
 from std/sequtils import mapIt
+from std/times import DateTime, now
 from std/strutils import isEmptyOrWhitespace
 
 import norm/sqlite
