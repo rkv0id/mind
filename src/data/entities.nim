@@ -5,24 +5,24 @@ from std/os import fileExists, removeFile
 from std/strutils import isEmptyOrWhitespace, join
 
 import norm/sqlite
+from norm/pragmas import uniqueIndex
 from norm/model import Model, cpIgnore
-from norm/pragmas import unique, uniqueGroup, uniqueIndex
 
 from ./repository import mindDbFile
 
 type
   File = ref object of Model
-    path {.unique, uniqueIndex: "File_paths".}: string
+    path {.uniqueIndex: "File_paths".}: string
     persistent: bool
 
   Tag = ref object of Model
-    name {.unique, uniqueIndex: "Tag_names".}: string
+    name {.uniqueIndex: "Tag_names".}: string
     system: bool
     desc: string
   
   FileTag = ref object of Model
-    file {.uniqueGroup.}: File
-    tag {.uniqueGroup.}: Tag
+    file: File
+    tag: Tag
     at: DateTime
 
 func newFile(path = "", persistent = false): File =
@@ -108,32 +108,29 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
     sysTag: Tag
     userTag: Tag
     file: File
-    tags: seq[Tag]
 
   withMindDb: db.transaction:
-    for name in tagNames:
-      userTag = newTag(name)
-      try: db.insert userTag
-      except: db.select(userTag, "Tag.name = ? and Tag.system = 0", name)
-      tags.add userTag
-
     for ext in extensionToPaths.keys:
       sysTag = newTag("sys[" & ext & "]", true,
                       "Tracks all tagged " & (
                         if not ext.isEmptyOrWhitespace: ext
                         else: "extensionless"
                       ) & " files.")
-      try: db.insert sysTag
-      except: db.select(sysTag, "Tag.name = ? and Tag.system = 1", sysTag.name)
+      try: db.select(sysTag, "Tag.name = ? and Tag.system = 1", sysTag.name)
+      except: discard
 
       for path in extensionToPaths[ext]:
         file = newFile(path, persistent)
         try: db.select(file, "File.path = ?", path)
-        except:
-          tagged = newFileTag(file, sysTag, at)
-          db.insert(tagged, conflictPolicy=cpIgnore)
-        for tag in tags:
-          tagged = newFileTag(file, tag)
+        except: discard
+        tagged = newFileTag(file, sysTag, at)
+        db.insert(tagged, conflictPolicy=cpIgnore)
+
+        for name in tagNames:
+          userTag = newTag(name)
+          try: db.select(userTag, "Tag.name = ? and Tag.system = 0", name)
+          except: discard
+          tagged = newFileTag(file, userTag, at)
           db.insert(tagged, conflictPolicy=cpIgnore)
 
 proc deleteTags*(tagNames: HashSet[string]) =
