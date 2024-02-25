@@ -1,14 +1,14 @@
 import std/[sets, tables]
-from std/sequtils import mapIt
 from std/times import DateTime, now
+from std/sequtils import mapIt, filterIt
 from std/os import fileExists, removeFile
-from std/strutils import isEmptyOrWhitespace
+from std/strutils import isEmptyOrWhitespace, join
 
 import norm/sqlite
 from norm/model import Model, cpIgnore
 from norm/pragmas import uniqueGroup, uniqueIndex
 
-from ./repository import mindDbFile, checkRepo
+from ./repository import mindDbFile
 
 type
   File = ref object of Model
@@ -36,17 +36,18 @@ func newFileTag(file = newFile(), tag = newTag(), at = now()): FileTag =
 
 
 template withMindDb*(body: untyped): untyped =
-  checkRepo()
   let
-    init = not mindDbFile.fileExists
     db {.inject.} =
       try: open("file://" & mindDbFile, "", "", "")
       except: raise newException(IOError, "Could not establish connection to local database!")
   
   try:
-    if init: db.createTables newFileTag()
     body
   finally: close db
+
+proc initDb*() =
+  if not mindDbFile.fileExists:
+    withMindDb: db.createTables newFileTag()
 
 proc readTags*(system = false): seq[tuple[name, desc: string, count: int64]] =
   var
@@ -57,7 +58,7 @@ proc readTags*(system = false): seq[tuple[name, desc: string, count: int64]] =
     db.select(tags, "Tag.system = ?", system)
     for tag in tags:
       count[tag.name] =
-        db.count(FileTag, cond = "FileTag.tag = ?", params = tag)
+        db.count(FileTag, cond="FileTag.tag = ?", params=tag)
   
   tags.mapIt((name: it.name, desc: it.desc, count: count[it.name]))
 
@@ -168,4 +169,23 @@ proc deleteFiles*(paths: seq[string]) =
         db.delete file
       except: discard
 
-proc deleteTagsFromFiles*(paths: seq[string], tagNames: HashSet[string]) = discard
+proc deleteTagsFromFiles*(paths: seq[string], tagNames: HashSet[string]) =
+  var
+    file: File
+    tagds: seq[FileTag]
+  
+  withMindDb: db.transaction:
+    for path in paths:
+      try:
+        file = newFile()
+        db.select(file, "File.path = ?", path)
+        tagds = @[newFileTag()]
+        db.selectOneToMany(file, tagds)
+        var toDelete =
+          tagds.filterIt(it.tag.name in tagNames and not it.tag.system)
+        if toDelete.len < (tagds.len - 1): db.delete toDelete
+        else:
+          db.delete tagds
+          if file.persistent: removeFile file.path
+          db.delete file
+      except: discard
