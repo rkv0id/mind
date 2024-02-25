@@ -6,6 +6,7 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 ### TODOs
 
 - [ ] Files and Tags logic
+- [ ] Add hash/checksums support for duplicates detection
 - [ ] Synchronise hard and sym links
 - [ ] Full exception handling + Documentation
 - [ ] Some CLI visual work
