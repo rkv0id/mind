@@ -6,17 +6,17 @@ from std/strutils import isEmptyOrWhitespace, join
 
 import norm/sqlite
 from norm/model import Model, cpIgnore
-from norm/pragmas import uniqueGroup, uniqueIndex
+from norm/pragmas import unique, uniqueGroup, uniqueIndex
 
 from ./repository import mindDbFile
 
 type
   File = ref object of Model
-    path {.uniqueIndex: "File_paths".}: string
+    path {.unique, uniqueIndex: "File_paths".}: string
     persistent: bool
 
   Tag = ref object of Model
-    name {.uniqueIndex: "Tag_names".}: string
+    name {.unique, uniqueIndex: "Tag_names".}: string
     system: bool
     desc: string
   
@@ -113,8 +113,8 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
   withMindDb: db.transaction:
     for name in tagNames:
       userTag = newTag(name)
-      try: db.select(userTag, "Tag.name = ? and Tag.system = 0", name)
-      except: db.insert(userTag, conflictPolicy=cpIgnore)
+      try: db.insert userTag
+      except: db.select(userTag, "Tag.name = ? and Tag.system = 0", name)
       tags.add userTag
 
     for ext in extensionToPaths.keys:
@@ -123,13 +123,13 @@ proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
                         if not ext.isEmptyOrWhitespace: ext
                         else: "extensionless"
                       ) & " files.")
-      try: db.select(sysTag, "Tag.name = ? and Tag.system = 1", sysTag.name)
-      except: db.insert(sysTag, conflictPolicy=cpIgnore)
+      try: db.insert sysTag
+      except: db.select(sysTag, "Tag.name = ? and Tag.system = 1", sysTag.name)
+
       for path in extensionToPaths[ext]:
         file = newFile(path, persistent)
         try: db.select(file, "File.path = ?", path)
         except:
-          db.insert(file, conflictPolicy=cpIgnore)
           tagged = newFileTag(file, sysTag, at)
           db.insert(tagged, conflictPolicy=cpIgnore)
         for tag in tags:
