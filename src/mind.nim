@@ -2,8 +2,8 @@ import docopt
 import docopt/dispatch
 
 import ./app/tags
-from ./data/entities import initDb
-from ./data/repository import checkRepo
+from ./data/entities import existsOrInitDb
+from ./data/repository import existsOrInitRepo, dropRepo
 
 
 const doc = """
@@ -15,7 +15,7 @@ Description:
 Usage:
   mind -h
   mind -v
-  mind init
+  mind init [-f]
   mind ls [-asq] [<tagpattern>]
   mind tag [-H] <filepattern> <tags>...
   mind untag <filepattern> [<tags>...]
@@ -27,6 +27,7 @@ Usage:
 Options:
   -h --help               Show this screen.
   -v --version            Show version.
+  -f --force              Force Mind DB reinitialization (even if DB is already populated).
   -a --all                Show even tags with 0 linked files.
   -s --system             Show only system tags.
   -q --quiet              Show a shorter more concise version of the output.
@@ -39,8 +40,9 @@ when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
 
   if args["init"]:
-    checkRepo()
-    initDb()
+    if args["--reset"]: dropRepo()
+    existsOrInitRepo()
+    existsOrInitDb()
 
   args.dispatchProc(listTags, "ls")
   args.dispatchProc(tagFiles, "tag")

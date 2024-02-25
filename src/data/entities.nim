@@ -45,8 +45,8 @@ template withMindDb*(body: untyped): untyped =
     body
   finally: close db
 
-proc initDb*() =
-  if not mindDbFile.fileExists:
+proc existsOrInitDb*() =
+  if not fileExists mindDbFile:
     withMindDb: db.createTables newFileTag()
 
 proc readTags*(system = false): seq[tuple[name, desc: string, count: int64]] =

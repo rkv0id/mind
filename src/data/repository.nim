@@ -1,4 +1,4 @@
-from std/os import getDataDir, joinPath, existsOrCreateDir
+import std/os
 
 
 const MindHomeDir = ".mind"
@@ -7,8 +7,10 @@ let
   mindFilesDir = mindDataDir.joinPath("files")
   mindDbFile* = mindDataDir.joinPath("data.db")
 
-proc checkRepo*() =
+proc existsOrInitRepo*() =
   discard existsOrCreateDir mindDataDir
   discard existsOrCreateDir mindFilesDir
+
+proc dropRepo*() = removeDir mindDataDir
 
 proc hardFile*(filename: string): string = mindFilesDir.joinPath(filename)
