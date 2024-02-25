@@ -1,7 +1,7 @@
 import std/[sets, tables]
 from std/sequtils import toSeq, filterIt, foldl, mapIt
 from std/strutils import join, alignLeft, `%`, isEmptyOrWhitespace
-from std/os import walkFiles, splitFile, createHardlink, joinPath, absolutePath
+from std/os import walkFiles, splitFile, createHardlink, joinPath, absolutePath, fileExists
 
 from regex import re2, match
 
@@ -39,13 +39,14 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
     let
       (_, name, ext) = path.splitFile
       newPath = if hard: hardFile(name & ext) else: path.absolutePath
-    if hard: path.createHardlink newPath
+    if hard:
+      if not newPath.fileExists: path.createHardlink newPath
+      else: raise newException(ValueError, "A similarly-named file to [" &
+                               path & "] exists in Mind data store already!")
     extensionToPaths[ext] = extensionToPaths.getOrDefault(ext, @[]) & newPath
   addTaggedFiles(extensionToPaths, tags.toHashSet, hard)
 
 proc untagFiles*(filepattern: string, tags: seq[string]) =
-  ## TODO
-  echo "untag " & filepattern & (if tags.len > 0: " by #" & $tags.join(" #") else: "")
   let files = filepattern.walkFiles.toSeq.mapIt it.absolutePath
   if tags.len == 0: deleteFiles files
   else: deleteTagsFromFiles(files, tags.toHashSet)
