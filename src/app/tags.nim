@@ -11,19 +11,21 @@ from ../data/entities import addTaggedFiles, deleteTags, deleteFiles,
                              deleteTagsFromFiles
 
 
-proc listTags*(tagpattern: string, system: bool, quiet: bool) =
-  let matched =
-    if tagpattern == "nil": readTags system
-    else: readTags(system).filterIt(it.name.match re2(tagpattern))
+proc listTags*(tagpattern: string, all: bool, system: bool, quiet: bool) =
+  let
+    matched =
+      if tagpattern == "nil": readTags system
+      else: readTags(system).filterIt(it.name.match re2(tagpattern))
+    shown = if all: matched else: matched.filterIt(it.count > 0)
   
-  if matched.len > 0:
+  if shown.len > 0:
     if not quiet:
-      let tagLen = matched.foldl(max(a, b.name.len), 0)
-      echo matched.mapIt("$1\t$2 file(s)\t$3" % [
+      let tagLen = shown.foldl(max(a, b.name.len), 0)
+      echo shown.mapIt("$1\t$2 file(s)\t$3" % [
         it.name.alignLeft(tagLen),
         $it.count,
         it.desc]).join("\n")
-    else: echo matched.mapIt(it.name).join("\n")
+    else: echo shown.mapIt(it.name).join("\n")
 
 proc modTag*(name: string, newname: string) =
   if name != newname: name.updateTagName newname

@@ -16,7 +16,7 @@ Usage:
   mind -h
   mind -v
   mind init
-  mind ls [-s] [-q] [<tagpattern>]
+  mind ls [-asq] [<tagpattern>]
   mind tag [-H] <filepattern> <tags>...
   mind untag <filepattern> [<tags>...]
   mind mv <name> <newname>
@@ -27,6 +27,7 @@ Usage:
 Options:
   -h --help               Show this screen.
   -v --version            Show version.
+  -a --all                Show even tags with 0 linked files.
   -s --system             Show only system tags.
   -q --quiet              Show a shorter more concise version of the output.
   -S --sync               Synchronise query results before output.
