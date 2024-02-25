@@ -44,7 +44,11 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
       else: raise newException(ValueError, "A similarly-named file to [" &
                                path & "] exists in Mind data store already!")
     extensionToPaths[ext] = extensionToPaths.getOrDefault(ext, @[]) & newPath
-  addTaggedFiles(extensionToPaths, tags.toHashSet, hard)
+  
+  addTaggedFiles(extensionToPaths,
+                 tags.filterIt(
+                  it.match re2"([a-zA-Z_][a-zA-Z0-9_]+)"
+                 ).toHashSet, hard)
 
 proc untagFiles*(filepattern: string, tags: seq[string]) =
   let files = filepattern.walkFiles.toSeq.mapIt it.absolutePath
