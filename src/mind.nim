@@ -1,7 +1,9 @@
 import docopt
 import docopt/dispatch
 
-import app/tags
+import ./app/tags
+from ./data/entities import initDb
+from ./data/repository import checkRepo
 
 
 const doc = """
@@ -13,6 +15,7 @@ Description:
 Usage:
   mind -h
   mind -v
+  mind init
   mind ls [-s] [-q] [<tagpattern>]
   mind tag [-H] <filepattern> <tags>...
   mind untag <filepattern> [<tags>...]
@@ -33,6 +36,10 @@ Options:
 
 when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
+
+  if args["init"]:
+    checkRepo()
+    initDb()
 
   args.dispatchProc(listTags, "ls")
   args.dispatchProc(tagFiles, "tag")
