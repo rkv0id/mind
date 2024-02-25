@@ -6,7 +6,7 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 ### TODOs
 
 - [x] Files and Tags logic
-- [ ] Make all tags/files removals deep
+- [ ] Make all removals deep for hard files
 - [ ] Add hash/checksums support for duplicates detection
 - [ ] Synchronise hard and sym links
 - [ ] Full exception handling + Documentation
