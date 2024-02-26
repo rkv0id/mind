@@ -1,11 +1,10 @@
-import std/[sets, tables]
+from std/sets import toHashSet, items
+from std/os import walkFiles, joinPath, absolutePath
 from std/sequtils import toSeq, filterIt, foldl, mapIt
 from std/strutils import join, alignLeft, `%`, isEmptyOrWhitespace
-from std/os import walkFiles, splitFile, createHardlink, joinPath, absolutePath, fileExists
 
 from regex import re2, match
 
-from ../data/repository import hardFile
 from ../data/entities import addTaggedFiles, deleteTags, deleteFiles,
                              updateTagName, updateTagDesc, readTags,
                              deleteTagsFromFiles
@@ -36,18 +35,7 @@ proc describeTag*(tag: string, description: string) =
 proc removeTag*(tags: seq[string]) = deleteTags tags.toHashSet
 
 proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
-  var extensionToPaths: Table[string, seq[string]]
-  for path in filepattern.walkFiles.toSeq:
-    let
-      (_, name, ext) = path.splitFile
-      newPath = if hard: hardFile(name & ext) else: path.absolutePath
-    if hard:
-      if not newPath.fileExists: path.createHardlink newPath
-      else: raise newException(ValueError, "A similarly-named file to [" &
-                               path & "] exists in Mind data store already!")
-    extensionToPaths[ext] = extensionToPaths.getOrDefault(ext, @[]) & newPath
-  
-  addTaggedFiles(extensionToPaths,
+  addTaggedFiles(filepattern.walkFiles.toSeq,
                  tags.filterIt(
                   it.match re2"([a-zA-Z_][a-zA-Z0-9_]+)"
                  ).toHashSet, hard)
@@ -55,7 +43,7 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
 proc untagFiles*(filepattern: string, tags: seq[string]) =
   let files = filepattern.walkFiles.toSeq.mapIt it.absolutePath
   if tags.len == 0: deleteFiles files
-  else: deleteTagsFromFiles(files, tags.toHashSet)
+  else: deleteTagsFromFiles(files, tags.toHashSet.toSeq)
 
 proc find*(query: string, tree: int, sync: bool) =
   ## TODO
