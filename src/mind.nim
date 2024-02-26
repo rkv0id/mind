@@ -27,7 +27,7 @@ Usage:
 Options:
   -h --help               Show this screen.
   -v --version            Show version.
-  -f --force              Force Mind DB reinitialization (even if DB is already populated).
+  -f --force              Force Mind DB reinitialization if DB is already populated.
   -a --all                Show even tags with 0 linked files.
   -s --system             Show only system tags.
   -q --quiet              Show a shorter more concise version of the output.
@@ -40,7 +40,7 @@ when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
 
   if args["init"]:
-    if args["--reset"]: dropRepo()
+    if args["--force"]: dropRepo()
     existsOrInitRepo()
     existsOrInitDb()
 
