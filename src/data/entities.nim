@@ -1,14 +1,15 @@
 import std/[sets, tables]
 from std/times import DateTime, now
 from std/sequtils import mapIt, filterIt
-from std/os import fileExists, removeFile
 from std/strutils import isEmptyOrWhitespace, join
+from std/os import fileExists, removeFile, walkFiles,
+                   splitFile, absolutePath, createHardlink
 
 import norm/sqlite
-from norm/pragmas import uniqueIndex
+from norm/pragmas import index, uniqueIndex
 from norm/model import Model, cpIgnore
 
-from ./repository import mindDbFile
+from ./repository import mindDbFile, hardFile
 
 type
   File = ref object of Model
@@ -21,8 +22,8 @@ type
     desc: string
   
   FileTag = ref object of Model
-    file: File
-    tag: Tag
+    file {.index: "FileTag_file".}: File
+    tag {.index: "FileTag_tag".}: Tag
     at: DateTime
 
 func newFile(path = "", persistent = false): File =
@@ -100,38 +101,53 @@ proc updateTagDesc*(name, description: string) =
       db.update tag
     except: raise newException(ValueError, "Could not find tag entry!")
 
-proc addTaggedFiles*(extensionToPaths: Table[string, seq[string]],
+proc extensionsTable(files: seq[string], persistent: bool): Table[string, seq[string]] =
+  for path in files:
+    let
+      (_, name, ext) = path.splitFile
+      newPath = if persistent: hardFile(name & ext) else: path.absolutePath
+    if persistent:
+      if not newPath.fileExists: path.createHardlink newPath
+      else: raise newException(ValueError, "A similarly-named file to [" &
+                               path & "] exists in Mind data store already!")
+    result[ext] = result.getOrDefault(ext, @[]) & newPath
+
+proc addTaggedFiles*(files: seq[string],
                      tagNames = HashSet[string](), persistent = false) =
-  var
+  let
     at = now()
+    extensionsTable = extensionsTable(files, persistent)
+
+  var
     tagged: FileTag
-    sysTag: Tag
-    userTag: Tag
     file: File
+    tags: seq[Tag]
 
   withMindDb: db.transaction:
-    for ext in extensionToPaths.keys:
-      sysTag = newTag("sys[" & ext & "]", true,
-                      "Tracks all tagged " & (
-                        if not ext.isEmptyOrWhitespace: ext
-                        else: "extensionless"
-                      ) & " files.")
-      try: db.select(sysTag, "Tag.name = ? and Tag.system = 1", sysTag.name)
+    tags.add newTag(system=true)
+    for name in tagNames:
+      tags.add newTag(name)
+      try: db.select(tags[^1], "Tag.name = ? and Tag.system = 0", name)
       except: discard
 
-      for path in extensionToPaths[ext]:
+    for ext, paths in extensionsTable.pairs:
+      tags[0] = newTag("sys[" & ext & "]", true,
+                       "Tracks all tagged " & (
+                        if not ext.isEmptyOrWhitespace: ext
+                        else: "extensionless"
+                       ) & " files.")
+      try: db.select(tags[0], "Tag.name = ? and Tag.system = 1", tags[0].name)
+      except: discard
+
+      for path in paths:
         file = newFile(path, persistent)
         try: db.select(file, "File.path = ?", path)
         except: discard
-        tagged = newFileTag(file, sysTag, at)
-        db.insert(tagged, conflictPolicy=cpIgnore)
 
-        for name in tagNames:
-          userTag = newTag(name)
-          try: db.select(userTag, "Tag.name = ? and Tag.system = 0", name)
-          except: discard
-          tagged = newFileTag(file, userTag, at)
-          db.insert(tagged, conflictPolicy=cpIgnore)
+        for tag in tags:
+          tagged = newFileTag(file, tag, at)
+          try: db.select(tagged, "FileTag.tag = ? and File = ?", tag, file)
+          except: db.insert tagged
 
 proc deleteTags*(tagNames: HashSet[string]) =
   var
@@ -166,23 +182,12 @@ proc deleteFiles*(paths: seq[string]) =
         db.delete file
       except: discard
 
-proc deleteTagsFromFiles*(paths: seq[string], tagNames: HashSet[string]) =
-  var
-    file: File
-    tagds: seq[FileTag]
-  
+proc deleteTagsFromFiles*(paths, tagNames: seq[string]) =
+  var tagds = @[newFileTag()]
   withMindDb: db.transaction:
     for path in paths:
       try:
-        file = newFile()
-        db.select(file, "File.path = ?", path)
-        tagds = @[newFileTag()]
-        db.selectOneToMany(file, tagds)
-        var toDelete =
-          tagds.filterIt(it.tag.name in tagNames and not it.tag.system)
-        if toDelete.len < (tagds.len - 1): db.delete toDelete
-        else:
-          db.delete tagds
-          if file.persistent: removeFile file.path
-          db.delete file
+        db.select(tagds, "File.path = ? and Tag.system = 0 and Tag.name in ('" &
+                  (tagNames.join("', '")) & "')", path)
+        db.delete tagds
       except: discard
