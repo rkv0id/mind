@@ -2,7 +2,7 @@ import docopt
 import docopt/dispatch
 
 import ./app/tags
-from ./data/entities import existsOrInitDb
+from ./data/entities import existsOrInitDb, syncDb
 from ./data/repository import existsOrInitRepo, dropRepo
 
 
@@ -15,6 +15,7 @@ Description:
 Usage:
   mind -h
   mind -v
+  mind sync
   mind init [-f]
   mind ls [-asq] [<tagpattern>]
   mind tag [-H] <filepattern> <tags>...
@@ -22,7 +23,7 @@ Usage:
   mind mv <name> <newname>
   mind desc <tag> <description>
   mind rm <tags>...
-  mind find [-t=<level>] [-S] <query>
+  mind find [-t=<level>] <query>
 
 Options:
   -h --help               Show this screen.
@@ -31,7 +32,6 @@ Options:
   -a --all                Show even tags with 0 linked files.
   -s --system             Show only system tags.
   -q --quiet              Show a shorter more concise version of the output.
-  -S --sync               Synchronise query results before output.
   -H --hard               Create a hard link for a file and tag it.
   -t LEVEL --tree=LEVEL   Show results in tree mode until LEVEL then revert to list mode. [default: 0]
 """
@@ -39,11 +39,12 @@ Options:
 when isMainModule:
   let args = docopt(doc, version = "MIND v0.1.0")
 
+  if args["sync"]: syncDb()
   if args["init"]:
     if args["--force"]: dropRepo()
     existsOrInitRepo()
     existsOrInitDb()
-
+  
   args.dispatchProc(listTags, "ls")
   args.dispatchProc(tagFiles, "tag")
   args.dispatchProc(untagFiles, "untag")

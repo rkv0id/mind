@@ -1,6 +1,6 @@
 import std/tables
-from std/sequtils import mapIt
 from std/times import DateTime, now
+from std/sequtils import mapIt, filterIt
 from std/strutils import isEmptyOrWhitespace, join
 from std/os import fileExists, removeFile, getFileInfo,
                    splitFile, absolutePath, createHardlink
@@ -150,14 +150,16 @@ proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
 
 proc deleteTags*(tagNames: seq[string]) =
   var
-    tag = newTag()
+    tag: Tag
     files: seq[File]
-    tagds = @[newFileTag()]
+    tagds: seq[FileTag]
 
   withMindDb: db.transaction:
     for name in tagNames:
       try:
+        tag = newTag()
         db.select(tag, "Tag.name = ? and Tag.system = 0", name)
+        tagds = @[newFileTag()]
         db.selectOneToMany(tag, tagds)
         files = tagds.mapIt(it.file)
         db.delete tagds
@@ -174,9 +176,10 @@ proc deleteTags*(tagNames: seq[string]) =
 proc deleteFiles*(paths: seq[string]) =
   var
     file = newFile()
-    tagds = @[newFileTag()]
+    tagds: seq[FileTag]
   withMindDb: db.transaction:
     for path in paths:
+      tagds = @[newFileTag()]
       db.select(file, "File.path = ?", path)
       db.selectOneToMany(file, tagds)
       db.delete tagds
@@ -197,3 +200,17 @@ proc deleteTagsFromFiles*(paths, tagNames: seq[string]) =
         if tagds[0].file.persistent: removeFile tagds[0].file.path
         db.delete tagds[0].file
         db.delete tagds
+
+proc syncDb*() =
+  var
+    files = @[newFile()]
+    tagds: seq[FileTag]
+
+  withMindDb: db.transaction:
+    db.select(files, "File.persistent = 0")
+    files = files.filterIt(not it.path.fileExists)
+    for file in files:
+      tagds = @[newFileTag()]
+      db.selectOneToMany(file, tagds)
+      db.delete tagds
+    db.delete files
