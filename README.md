@@ -6,13 +6,13 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 ### TODOs
 
 - [x] Files and Tags logic
-- [ ] Make all removals deep for hard files
-- [ ] Add hash/checksums support for duplicates detection
-- [ ] Synchronise hard and sym links
-- [ ] Full exception handling + Documentation
-- [ ] Some CLI visual work
-- [ ] Backups (compression and auto-backups)
+- [x] Make all removals deep for hard files
+- [x] ~~Add hash/checksums support for duplicates detection~~ (replaced with `dev_t` & `ino_t` checks)
+- [x] Synchronise sym links
 - [ ] Full Lookup DSL
+- [ ] Full exception handling + Documentation
+- [ ] Some CLI visual work (maybe some zsh completions)
+- [ ] Backups (compression and auto-backups)
 - [ ] Testing :tired_face:
 - [ ] Memos support
 - [ ] Tasks and TODO lists
