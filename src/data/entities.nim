@@ -106,10 +106,7 @@ proc extensionsTable(files: seq[string], persistent: bool): Table[string, seq[st
     let
       (_, name, ext) = path.splitFile
       newPath = if persistent: hardFile(name & ext) else: path.absolutePath
-    if persistent:
-      if not newPath.fileExists: path.createHardlink newPath
-      else: raise newException(ValueError, "A similarly-named file to [" &
-                               path & "] exists in Mind data store already!")
+    if persistent and not newPath.fileExists: path.createHardlink newPath
     result[ext] = result.getOrDefault(ext, @[]) & newPath
 
 proc addTaggedFiles*(files: seq[string],
@@ -119,9 +116,9 @@ proc addTaggedFiles*(files: seq[string],
     extensionsTable = extensionsTable(files, persistent)
 
   var
-    tagged: FileTag
     file: File
     tags: seq[Tag]
+    tagged: FileTag
 
   withMindDb: db.transaction:
     tags.add newTag(system=true)
@@ -151,43 +148,50 @@ proc addTaggedFiles*(files: seq[string],
 
 proc deleteTags*(tagNames: HashSet[string]) =
   var
-    tag: Tag
-    tagds: seq[FileTag]
+    tag = newTag()
+    files: seq[File]
+    tagds = @[newFileTag()]
 
   withMindDb: db.transaction:
     for name in tagNames:
       try:
-        tag = newTag()
         db.select(tag, "Tag.name = ? and Tag.system = 0", name)
-        tagds = @[newFileTag()]
         db.selectOneToMany(tag, tagds)
+        files = tagds.mapIt(it.file)
         db.delete tagds
         db.delete tag
+        for file in files.mitems:
+          tagds = @[newFileTag()]
+          db.selectOneToMany(file, tagds)
+          if tagds.len <= 1:
+            if file.persistent: removeFile file.path
+            db.delete file
+            db.delete tagds
       except: discard
 
 proc deleteFiles*(paths: seq[string]) =
   var
-    file: File
-    tagds: seq[FileTag]
-
+    file = newFile()
+    tagds = @[newFileTag()]
   withMindDb: db.transaction:
     for path in paths:
-      try:
-        file = newFile()
-        db.select(file, "File.path = ?", path)
-        tagds = @[newFileTag()]
-        db.selectOneToMany(file, tagds)
-        db.delete tagds
-        if file.persistent: removeFile file.path
-        db.delete file
-      except: discard
+      db.select(file, "File.path = ?", path)
+      db.selectOneToMany(file, tagds)
+      db.delete tagds
+      if file.persistent: removeFile file.path
+      db.delete file
 
 proc deleteTagsFromFiles*(paths, tagNames: seq[string]) =
-  var tagds = @[newFileTag()]
+  var tagds: seq[FileTag]
   withMindDb: db.transaction:
     for path in paths:
-      try:
-        db.select(tagds, "File.path = ? and Tag.system = 0 and Tag.name in ('" &
-                  (tagNames.join("', '")) & "')", path)
+      tagds = @[newFileTag()]
+      db.select(tagds, "File.path = ? and Tag.system = 0 and Tag.name in ('" &
+                (tagNames.join("', '")) & "')", path)
+      db.delete tagds
+      tagds = @[newFileTag()]
+      db.select(tagds, "File.path = ?", path)
+      if tagds.len == 1:
+        if tagds[0].file.persistent: removeFile tagds[0].file.path
+        db.delete tagds[0].file
         db.delete tagds
-      except: discard
