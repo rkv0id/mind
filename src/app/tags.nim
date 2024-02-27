@@ -1,7 +1,7 @@
 from std/sets import toHashSet, items
-from std/os import walkFiles, joinPath, absolutePath
+from std/os import walkFiles, absolutePath
+from std/strutils import `%`, join, alignLeft
 from std/sequtils import toSeq, filterIt, foldl, mapIt
-from std/strutils import join, alignLeft, `%`, isEmptyOrWhitespace
 
 from regex import re2, match
 
@@ -30,7 +30,7 @@ proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
   addTaggedFiles(filepattern.walkFiles.toSeq,
                  tags.filterIt(
                   it.match re2"([a-zA-Z_][a-zA-Z0-9_]+)"
-                 ).toHashSet, hard)
+                 ).toHashSet.toSeq, hard)
 
 proc untagFiles*(filepattern: string, tags: seq[string]) =
   let files = filepattern.walkFiles.toSeq.mapIt it.absolutePath
@@ -41,7 +41,7 @@ proc modTag*(name, newname: string) =
   if name != newname: name.updateTagName newname
 
 proc describeTag*(tag, description: string) = updateTagDesc(tag, description)
-proc removeTag*(tags: seq[string]) = deleteTags tags.toHashSet
+proc removeTag*(tags: seq[string]) = deleteTags tags.toHashSet.toSeq
 
 proc find*(query: string, tree: int, sync: bool) =
   ## TODO
