@@ -1,13 +1,13 @@
-import std/[sets, tables]
+import std/tables
+from std/sequtils import mapIt
 from std/times import DateTime, now
-from std/sequtils import mapIt, filterIt
 from std/strutils import isEmptyOrWhitespace, join
-from std/os import fileExists, removeFile, walkFiles,
+from std/os import fileExists, removeFile, getFileInfo,
                    splitFile, absolutePath, createHardlink
 
 import norm/sqlite
+from norm/model import Model
 from norm/pragmas import index, uniqueIndex
-from norm/model import Model, cpIgnore
 
 from ./repository import mindDbFile, hardFile
 
@@ -106,11 +106,13 @@ proc extensionsTable(files: seq[string], persistent: bool): Table[string, seq[st
     let
       (_, name, ext) = path.splitFile
       newPath = if persistent: hardFile(name & ext) else: path.absolutePath
-    if persistent and not newPath.fileExists: path.createHardlink newPath
+    if persistent:
+      if not newPath.fileExists: path.createHardlink newPath
+      elif newPath.getFileInfo.id != path.getFileInfo.id:
+        raise newException(ValueError, "Mind data store contains a different file with this exact name!")
     result[ext] = result.getOrDefault(ext, @[]) & newPath
 
-proc addTaggedFiles*(files: seq[string],
-                     tagNames = HashSet[string](), persistent = false) =
+proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
   let
     at = now()
     extensionsTable = extensionsTable(files, persistent)
@@ -146,7 +148,7 @@ proc addTaggedFiles*(files: seq[string],
           try: db.select(tagged, "FileTag.tag = ? and File = ?", tag, file)
           except: db.insert tagged
 
-proc deleteTags*(tagNames: HashSet[string]) =
+proc deleteTags*(tagNames: seq[string]) =
   var
     tag = newTag()
     files: seq[File]
