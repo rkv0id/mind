@@ -10,7 +10,7 @@ from ../data/entities import addTaggedFiles, deleteTags, deleteFiles,
                              deleteTagsFromFiles
 
 
-proc listTags*(tagpattern: string, all: bool, system: bool, quiet: bool) =
+proc listTags*(tagpattern: string, all, system, quiet: bool) =
   let
     matched =
       if tagpattern == "nil": readTags system
@@ -26,14 +26,6 @@ proc listTags*(tagpattern: string, all: bool, system: bool, quiet: bool) =
         it.desc]).join("\n")
     else: echo shown.mapIt(it.name).join("\n")
 
-proc modTag*(name: string, newname: string) =
-  if name != newname: name.updateTagName newname
-
-proc describeTag*(tag: string, description: string) =
-  updateTagDesc(tag, description)
-
-proc removeTag*(tags: seq[string]) = deleteTags tags.toHashSet
-
 proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
   addTaggedFiles(filepattern.walkFiles.toSeq,
                  tags.filterIt(
@@ -44,6 +36,12 @@ proc untagFiles*(filepattern: string, tags: seq[string]) =
   let files = filepattern.walkFiles.toSeq.mapIt it.absolutePath
   if tags.len == 0: deleteFiles files
   else: deleteTagsFromFiles(files, tags.toHashSet.toSeq)
+
+proc modTag*(name, newname: string) =
+  if name != newname: name.updateTagName newname
+
+proc describeTag*(tag, description: string) = updateTagDesc(tag, description)
+proc removeTag*(tags: seq[string]) = deleteTags tags.toHashSet
 
 proc find*(query: string, tree: int, sync: bool) =
   ## TODO
