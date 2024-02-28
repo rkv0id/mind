@@ -130,7 +130,7 @@ proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
       except: discard
 
     for ext, paths in extensionsTable.pairs:
-      tags[0] = newTag("sys[" & ext & "]", true,
+      tags[0] = newTag("ext[" & ext & "]", true,
                        "Tracks all tagged " & (
                         if not ext.isEmptyOrWhitespace: ext
                         else: "extensionless"
