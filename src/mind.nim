@@ -1,7 +1,7 @@
 import docopt
 import docopt/dispatch
 
-import ./app/tags
+import ./app/[tags, queries]
 from ./data/entities import existsOrInitDb, syncDb
 from ./data/repository import existsOrInitRepo, dropRepo
 

@@ -42,8 +42,3 @@ proc modTag*(name, newname: string) =
 
 proc describeTag*(tag, description: string) = updateTagDesc(tag, description)
 proc removeTag*(tags: seq[string]) = deleteTags tags.toHashSet.toSeq
-
-proc find*(query: string, tree: int) =
-  ## TODO
-  echo "show tagged files according to query: " & query & " at a " &
-    (if tree == 0: "flat" else: $tree & "-tree") & " listing."
