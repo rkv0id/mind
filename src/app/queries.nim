@@ -24,6 +24,7 @@ func parse(tokens: seq[string], operatorStack = newSeq[string](),
            operandStack = newSeq[Node]()): Node =
   # TODO: POPPING
   # STACKING
+  # USE A STACK/DEQUEU AND TREAT EDGE CASES (STACKS EMPTINESS)
   case tokens[0]:
   of "not", "and", "or": parse(tokens[1..^1], tokens[0] & operatorStack, operandStack)
   of "(": parse(tokens[1..^1], operatorStack, operandStack)
@@ -33,7 +34,8 @@ func parse(tokens: seq[string], operatorStack = newSeq[string](),
       of '#': Node(kind: nkTag, val: tokens[0][1..^1])
       of '.': Node(kind: nkExtension, val: tokens[0][1..^1])
       of 's': Node(kind: nkSysTag, val: tokens[0][2..^1])
-      else: Node(kind: nkType, val: tokens[0][2..^1])
+      of 't': Node(kind: nkType, val: tokens[0][2..^1])
+      else: raise newException(ValueError, "Query not-valid. Expected operand but found '" & tokens[0] & "'")
     if operatorStack.len == 0 or operatorStack[0] == "or":
       parse(tokens[1..^1], operatorStack, operand & operandStack)
     else:
