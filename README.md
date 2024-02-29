@@ -10,6 +10,7 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 - [x] ~~Add hash/checksums support for duplicates detection~~ (replaced with `dev_t` & `ino_t` checks)
 - [x] Synchronise sym links
 - [ ] Full Lookup DSL
+- [ ] ORM-less
 - [ ] Full exception handling + Documentation
 - [ ] Some CLI visual work (maybe some zsh completions)
 - [ ] Backups (compression and auto-backups)
