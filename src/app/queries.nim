@@ -12,12 +12,8 @@ type
     of nkAnd, nkOr: leftOp, rightOp: Node
 
 
-proc find*(query: string) =
-  ## TODO
-  echo "show tagged files according to query: " & query
-
 func tokenize(input: string): seq[string] =
-  const tokenRegx = re2"s\/[a-zA-Z_]\w*|#[a-zA-Z_]\w*|\.[a-zA-Z]\w*|t\/[a-zA-Z]+|and|or|not|\(|\)"
+  const tokenRegx = re2"(s\/|#|\.)[a-zA-Z_]\w*|t\/[a-zA-Z]+|and|or|not|\(|\)"
   input.findAll(tokenRegx).mapIt(input[it.boundaries])
 
 func parse(tokens: seq[string], operatorStack = newSeq[string](),
@@ -45,3 +41,7 @@ func parse(tokens: seq[string], operatorStack = newSeq[string](),
       else:
         parse(tokens[1..^1], operatorStack[1..^1],
               Node(kind: nkAnd, leftOp: operandStack[0], rightOp: operand) & operandStack[1..^1])
+
+proc find*(query: string) =
+  ## TODO
+  echo "show tagged files according to query: " & query
