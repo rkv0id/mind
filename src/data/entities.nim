@@ -2,14 +2,18 @@ import std/tables
 from std/times import DateTime, now
 from std/sequtils import mapIt, filterIt
 from std/strutils import isEmptyOrWhitespace, join
+from std/mimetypes import newMimetypes, getMimetype
 from std/os import fileExists, removeFile, getFileInfo,
                    splitFile, absolutePath, createHardlink
 
 import norm/sqlite
+
 from norm/model import Model
 from norm/pragmas import index, uniqueIndex
 
 from ./repository import mindDbFile, hardFile
+
+const SystemTags = 2
 
 type
   File = ref object of Model
@@ -101,7 +105,7 @@ proc updateTagDesc*(name, description: string) =
       db.update tag
     except: raise newException(ValueError, "Could not find tag entry!")
 
-proc extensionsTable(files: seq[string], persistent: bool): Table[string, seq[string]] =
+proc extensionsToPaths(files: seq[string], persistent: bool): Table[string, seq[string]] =
   for path in files:
     let
       (_, name, ext) = path.splitFile
@@ -112,10 +116,23 @@ proc extensionsTable(files: seq[string], persistent: bool): Table[string, seq[st
         raise newException(ValueError, "Mind data store contains a different file with this exact name!")
     result[ext] = result.getOrDefault(ext, @[]) & newPath
 
+func systemTags(fileExtension: string): seq[Tag] =
+  const mimeDb = newMimetypes()
+  let fileType = mimeDb.getMimetype fileExtension
+  @[
+    newTag("ext[" & fileExtension & "]", true,
+           "Tracks all tagged " & (
+            if not fileExtension.isEmptyOrWhitespace: fileExtension
+            else: "extensionless"
+           ) & " files."),
+    newTag("type[" & fileType & "]", true,
+           "Tracks all tagged " & fileType & " files.")
+  ]
+
 proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
   let
     at = now()
-    extensionsTable = extensionsTable(files, persistent)
+    extensionsTable = extensionsToPaths(files, persistent)
 
   var
     file: File
@@ -123,18 +140,14 @@ proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
     tagged: FileTag
 
   withMindDb: db.transaction:
-    tags.add newTag(system=true)
+    for _ in 1..SystemTags: tags.add newTag(system=true)
     for name in tagNames:
       tags.add newTag(name)
       try: db.select(tags[^1], "Tag.name = ? and Tag.system = 0", name)
       except: discard
 
     for ext, paths in extensionsTable.pairs:
-      tags[0] = newTag("ext[" & ext & "]", true,
-                       "Tracks all tagged " & (
-                        if not ext.isEmptyOrWhitespace: ext
-                        else: "extensionless"
-                       ) & " files.")
+      tags[0..<SystemTags] = systemTags(ext)
       try: db.select(tags[0], "Tag.name = ? and Tag.system = 1", tags[0].name)
       except: discard
 
@@ -167,7 +180,7 @@ proc deleteTags*(tagNames: seq[string]) =
         for file in files.mitems:
           tagds = @[newFileTag()]
           db.selectOneToMany(file, tagds)
-          if tagds.len <= 1:
+          if tagds.len <= SystemTags:
             if file.persistent: removeFile file.path
             db.delete file
             db.delete tagds
@@ -196,7 +209,7 @@ proc deleteTagsFromFiles*(paths, tagNames: seq[string]) =
       db.delete tagds
       tagds = @[newFileTag()]
       db.select(tagds, "File.path = ?", path)
-      if tagds.len == 1:
+      if tagds.len == SystemTags:
         if tagds[0].file.persistent: removeFile tagds[0].file.path
         db.delete tagds[0].file
         db.delete tagds
