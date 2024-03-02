@@ -1,16 +1,19 @@
 import std/deques
 from std/sequtils import mapIt
 from regex import re2, findAll
+from std/strutils import toLower, isEmptyOrWhitespace
+
+from ../data/entities import readFiles
 
 type
   NodeKind = enum
     nkNot, nkAnd, nkOr,
-    nkTag, nkSysTag, nkExtension, nkType
+    nkTag, nkExtension, nkType
   Node = ref object
     case kind: NodeKind
-    of nkTag, nkSysTag, nkExtension, nkType: val: string
     of nkNot: op: Node
     of nkAnd, nkOr: leftOp, rightOp: Node
+    of nkTag, nkExtension, nkType: val: string
 
 
 func parseOr(tokens: var Deque[string]): Node
@@ -19,7 +22,6 @@ func parseAtom(tokens: var Deque[string]): Node =
   case token[0]:
   of '#': result = Node(kind: nkTag, val: token[1..^1])
   of '.': result = Node(kind: nkExtension, val: token[1..^1])
-  of 's': result = Node(kind: nkSysTag, val: token[2..^1])
   of 't': result = Node(kind: nkType, val: token[2..^1])
   of '(':
     result = parseOr tokens
@@ -30,10 +32,10 @@ func parseAtom(tokens: var Deque[string]): Node =
 
 func parseNot(tokens: var Deque[string]): Node =
   if tokens.len > 0:
-    if tokens[0] == "not":
+    if tokens.peekFirst == "not":
       discard tokens.popFirst
-      result = Node(kind: nkNot, op: parseAtom tokens)
-    else: result = parseAtom tokens
+      Node(kind: nkNot, op: parseAtom tokens)
+    else: parseAtom tokens
   else: raise newException(ValueError, "Query parse Error: expected `not` or tag atom but hit end of expression.")
 
 func parseAnd(tokens: var Deque[string]): Node =
@@ -49,13 +51,22 @@ func parseOr(tokens: var Deque[string]): Node =
     result = Node(kind: nkOr, leftOp: result, rightOp: parseAnd tokens)
 
 func tokenize(input: string): Deque[string] =
-  const tokenRegx = re2"(s\/|#|\.)[a-zA-Z_]\w*|t\/[a-zA-Z]+|and|or|not|\(|\)"
+  const tokenRegx = re2"#[a-zA-Z_]\w*|\.[a-zA-Z][a-zA-Z0-9]*|t\/[a-zA-Z]+|and|or|not|\(|\)"
   input.findAll(tokenRegx).mapIt(input[it.boundaries]).toDeque
 
-proc parse(input: string): Node =
+func parse(input: string): Node =
   var tokens = tokenize input
   parseOr tokens
 
-proc find*(query: string) = echo repr parse query
+func interpret(ast: Node): string =
+  case ast.kind:
+  of nkAnd: "(" & interpret(ast.leftOp) & ") AND (" & interpret(ast.rightOp) & ")"
+  of nkOr: interpret(ast.leftOp) & " OR " & interpret(ast.rightOp)
+  of nkNot: "(NOT " & interpret(ast.op) & ")"
+  of nkTag: "Tag.name = '" & ast.val & "'"
+  of nkExtension: "Tag.name = 'ext[" & ast.val & "]'"
+  of nkType: "Tag.name LIKE 'type[%" & ast.val.toLower & "%]'"
 
-find "#tag1 and (.md) or (.txt and #tag2 or #tag3) and ((s/systag1 or t/img) and t/file)"
+proc find*(query: string) =
+  let cond = if query.isEmptyOrWhitespace: "" else: interpret parse query
+  readFiles cond
