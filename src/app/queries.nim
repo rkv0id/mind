@@ -1,5 +1,5 @@
 from std/sequtils import mapIt, toSeq
-from regex import re2, findAll, group
+from regex import re2, findAll, group, match
 
 type
   NodeKind = enum
@@ -12,9 +12,13 @@ type
     of nkAnd, nkOr: leftOp, rightOp: Node
 
 
-func tokenize(input: string): seq[string] =
+proc tokenize(input: string): seq[string] =
+  const matchRgx = re2"(?:s\/|#|\.)[a-zA-Z_]\w*|t\/[a-zA-Z]+|and|or|not|\(|\)(?:\s*\))*"
   const tokenRegx = re2"(s\/|#|\.)[a-zA-Z_]\w*|t\/[a-zA-Z]+|and|or|not|\(|\)"
-  input.findAll(tokenRegx).mapIt(input[it.boundaries])
+  echo input.match matchRgx
+  if input.match matchRgx:
+    input.findAll(tokenRegx).mapIt(input[it.boundaries])
+  else: raise newException(ValueError, "Invalid query!")
 
 func parse(tokens: seq[string], operatorStack = newSeq[string](),
            operandStack = newSeq[Node]()): Node =
@@ -44,4 +48,6 @@ func parse(tokens: seq[string], operatorStack = newSeq[string](),
 
 proc find*(query: string) =
   ## TODO
-  echo "show tagged files according to query: " & query
+  echo tokenize query
+
+find "#bjg or (#E23_fg or ._F) or (not t/G and (t/F or .md and .sormek))"
