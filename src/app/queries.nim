@@ -1,7 +1,7 @@
-import std/deques
+import std/[sugar, deques, sets]
 from std/sequtils import mapIt
 from regex import re2, findAll
-from std/strutils import toLower, isEmptyOrWhitespace
+from std/strutils import toLower, isEmptyOrWhitespace, replace, join
 
 from ../data/entities import readFiles
 
@@ -58,15 +58,16 @@ func parse(input: string): Node =
   var tokens = tokenize input
   parseOr tokens
 
-func interpret(ast: Node): string =
-  case ast.kind:
-  of nkAnd: "(" & interpret(ast.leftOp) & ") AND (" & interpret(ast.rightOp) & ")"
-  of nkOr: interpret(ast.leftOp) & " OR " & interpret(ast.rightOp)
-  of nkNot: "(NOT " & interpret(ast.op) & ")"
-  of nkTag: "Tag.name = '" & ast.val & "'"
-  of nkExtension: "Tag.name = 'ext[" & ast.val & "]'"
-  of nkType: "Tag.name LIKE 'type[%" & ast.val.toLower & "%]'"
+func interpret(ast: Node): (HashSet[string] -> bool) =
+  return proc(tags: HashSet[string]): bool =
+    case ast.kind:
+    of nkAnd: interpret(ast.leftOp)(tags) and interpret(ast.rightOp)(tags)
+    of nkOr: interpret(ast.leftOp)(tags) or interpret(ast.rightOp)(tags)
+    of nkNot: not interpret(ast.op)(tags)
+    of nkTag: ast.val in tags
+    of nkExtension: "ext[" & ast.val & "]" in tags
+    of nkType: "type[" & ast.val.toLower & "]" in tags
 
 proc find*(query: string) =
-  let cond = if query.isEmptyOrWhitespace: "" else: interpret parse query
-  readFiles cond
+  if query.isEmptyOrWhitespace: echo readFiles(_ => true).join("\n")
+  else: echo readFiles(tags => (interpret parse query) tags).join("\n")

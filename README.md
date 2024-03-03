@@ -9,8 +9,8 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 - [x] Make all removals deep for hard files
 - [x] ~~Add hash/checksums support for duplicates detection~~ (replaced with `dev_t` & `ino_t` checks)
 - [x] Synchronise sym links
-- [ ] Full Lookup DSL
-- [ ] ORM-less (and cascade removals)
+- [x] Full Lookup DSL
+- [ ] ORM-less (maybe SQL-less too)
 - [ ] Full exception handling + Documentation
 - [ ] Some CLI visual work (maybe some zsh completions)
 - [ ] Backups (compression and auto-backups)

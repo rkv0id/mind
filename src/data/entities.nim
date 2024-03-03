@@ -1,6 +1,6 @@
-import std/tables
+import std/[sugar, sets, tables]
 from std/times import DateTime, now
-from std/sequtils import mapIt, filterIt
+from std/sequtils import mapIt, filterIt, toSeq, foldl, any
 from std/strutils import isEmptyOrWhitespace, join
 from std/mimetypes import newMimetypes, getMimetype
 from std/os import fileExists, removeFile, getFileInfo,
@@ -66,6 +66,18 @@ proc readTags*(system = false): seq[tuple[name, desc: string, count: int64]] =
         db.count(FileTag, cond="FileTag.tag = ?", params=tag)
   
   tags.mapIt((name: it.name, desc: it.desc, count: count[it.name]))
+
+proc readFiles*(predicate: HashSet[string] -> bool): seq[string] =
+  var
+    tagds = @[newFileTag()]
+    tagsByFile: Table[string, HashSet[string]]
+  withMindDb: db.transaction: db.selectAll tagds
+
+  for filetag in tagds:
+    if not (filetag.file.path in tagsByFile): tagsByFile[filetag.file.path] = initHashSet[string]()
+    tagsByFile[filetag.file.path].incl filetag.tag.name
+  
+  tagsByFile.keys.toSeq.filterIt(predicate tagsByFile[it])
 
 proc updateTagName*(name, newName: string) =
   withMindDb: db.transaction:
@@ -148,8 +160,9 @@ proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
 
     for ext, paths in extensionsTable.pairs:
       tags[0..<SystemTags] = systemTags(ext)
-      try: db.select(tags[0], "Tag.name = ? and Tag.system = 1", tags[0].name)
-      except: discard
+      for i in 0..<SystemTags:
+        try: db.select(tags[i], "Tag.name = ? and Tag.system = 1", tags[i].name)
+        except: discard
 
       for path in paths:
         file = newFile(path, persistent)
