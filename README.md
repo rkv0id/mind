@@ -3,6 +3,9 @@ Mind - *tags for the sane*. A NIMble and efficient tag-based system for file and
 
 With a focus on simplicity, **Mind** allows users to effortlessley exploit the tagging system to create multiple layouts and structures (think quick semantic lookups, or even KANBAN for your terminal). All due to tags and a powerful boolean-based lookup DSL.
 
+### Usage example
+<img src="./assets/screen.png" height="750">
+
 ### TODOs
 
 - [x] Files and Tags logic
