@@ -23,7 +23,7 @@ Usage:
   mind mv <name> <newname>
   mind desc <tag> <description>
   mind rm <tags>...
-  mind find <query>
+  mind find [<query>]
 
 Options:
   -h --help               Show this screen.

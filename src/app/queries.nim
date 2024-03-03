@@ -51,7 +51,7 @@ func parseOr(tokens: var Deque[string]): Node =
     result = Node(kind: nkOr, leftOp: result, rightOp: parseAnd tokens)
 
 func tokenize(input: string): Deque[string] =
-  const tokenRegx = re2"#[a-zA-Z_]\w*|\.[a-zA-Z][a-zA-Z0-9]*|t\/[a-zA-Z]+|and|or|not|\(|\)"
+  const tokenRegx = re2"#[a-zA-Z_]\w*|\.(\?|[a-zA-Z][a-zA-Z0-9]*)|t\/[a-zA-Z]+|and|or|not|\(|\)"
   input.findAll(tokenRegx).mapIt(input[it.boundaries]).toDeque
 
 func parse(input: string): Node =
@@ -69,5 +69,10 @@ func interpret(ast: Node): (HashSet[string] -> bool) =
     of nkType: "type[" & ast.val.toLower & "]" in tags
 
 proc find*(query: string) =
-  if query.isEmptyOrWhitespace: echo readFiles(_ => true).join("\n")
-  else: echo readFiles(tags => (interpret parse query) tags).join("\n")
+  if query.isEmptyOrWhitespace or query == "nil":
+    echo readFiles(_ => true).join("\n")
+  else:
+    let
+      predicate = interpret parse query
+      shown = readFiles(predicate).join("\n")
+    if shown.len > 0: echo shown
