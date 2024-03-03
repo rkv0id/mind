@@ -59,7 +59,7 @@ func parse(input: string): Node =
   parseOr tokens
 
 func interpret(ast: Node): (HashSet[string] -> bool) =
-  return proc(tags: HashSet[string]): bool =
+  proc(tags: HashSet[string]): bool =
     case ast.kind:
     of nkAnd: interpret(ast.leftOp)(tags) and interpret(ast.rightOp)(tags)
     of nkOr: interpret(ast.leftOp)(tags) or interpret(ast.rightOp)(tags)
