@@ -13,12 +13,13 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 - [x] ~~Add hash/checksums support for duplicates detection~~ (replaced with `dev_t` & `ino_t` checks)
 - [x] Synchronise sym links
 - [x] Full Lookup DSL
-- [ ] ORM-less (maybe SQL-less too)
-- [ ] Full exception handling + Documentation
-- [ ] Some CLI visual work (maybe some zsh completions)
+- [ ] Memos support :memo:
+- [ ] Tasks and TODO lists :white_check_mark:
+- [ ] Key-value store :key: (with optional encryption :lock:)
 - [ ] Backups (compression and auto-backups)
+- [ ] Full error-handling + code and usage documentation
+- [ ] Optimization time / ORM-less? :thinking_face: (maybe SQL-less too)
+- [ ] Some CLI visual work (maybe some zsh completions)
 - [ ] Testing :tired_face:
-- [ ] Memos support
-- [ ] Tasks and TODO lists
-- [ ] Key-value store (with optional encryption)
 - [ ] Behaviour configuration and defaults
+- [ ] AI-backend for multi-modal content auto-tagging
