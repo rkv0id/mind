@@ -68,7 +68,7 @@ func interpret(ast: Node): (HashSet[string] -> bool) =
     of nkExtension: "ext[" & ast.val & "]" in tags
     of nkType: "type[" & ast.val.toLower & "]" in tags
 
-proc find*(query: string) =
+proc find*(query: string, files, memos, tasks: bool) =
   if query.isEmptyOrWhitespace or query == "nil":
     echo readFiles(_ => true).join("\n")
   else:
