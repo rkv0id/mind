@@ -29,7 +29,7 @@ proc listTags*(tagpattern: string, all, system, quiet: bool) =
 proc tagFiles*(filepattern: string, tags: seq[string], hard: bool) =
   addTaggedFiles(filepattern.walkFiles.toSeq,
                  tags.filterIt(
-                  it.match re2"([a-zA-Z_][a-zA-Z0-9_]+)"
+                  it.match re2"([a-zA-Z_]\w*)"
                  ).toHashSet.toSeq, hard)
 
 proc untagFiles*(filepattern: string, tags: seq[string]) =
