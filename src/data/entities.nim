@@ -171,8 +171,37 @@ proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
         except: discard
         for tag in sysTags & tags:
           tagged = newFileTag(file, tag, at)
-          try: db.select(tagged, "FileTag.tag = ? and File = ?", tag, file)
+          try: db.select(tagged, "FileTag.tag = ? and FileTag.file = ?", tag, file)
           except: db.insert tagged
+
+proc updateMemoTags(memoFilePath: string, tagNames: seq[string]) =
+  let at = now()
+  var
+    file: File
+    tag: Tag
+    tagged: FileTag
+  
+  withMindDb: db.transaction:
+    file = newFile(memoFilePath, false)
+    try: db.select(file, "File.path = ? and File.persistent = 1", memoFilePath)
+    except: discard
+
+    tag = newTag("sys[memo]", true, "Tracks all memos (tagged and untagged).")
+    try: db.select(tag, "Tag.name = ? and Tag.system = 1", tag.name)
+    except: discard
+
+    tagged = newFileTag(file, tag, at)
+    try: db.select(tagged, "FileTag.tag = ? and FileTag.file = ?", tag, file)
+    except: db.insert tagged
+
+    for name in tagNames:
+      tag = newTag(name)
+      try: db.select(tag, "Tag.name = ? and Tag.system = 0", tag.name)
+      except: discard
+
+      tagged = newFileTag(file, tag, at)
+      try: db.select(tagged, "FileTag.tag = ? and FileTag.file = ?", tag, file)
+      except: db.insert tagged
 
 proc deleteTags*(tagNames: seq[string]) =
   var
