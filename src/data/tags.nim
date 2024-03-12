@@ -29,7 +29,7 @@ proc readFiles*(predicate: HashSet[string] -> bool): seq[string] =
   var
     tagds = @[newFileTag()]
     tagsByFile: Table[string, HashSet[string]]
-  withMindDb: db.transaction: db.selectAll tagds
+  withMindDb: db.transaction: db.select(tagds, "File.memo = 0")
 
   for filetag in tagds:
     if not (filetag.file.path in tagsByFile):
@@ -167,11 +167,13 @@ proc deleteFiles*(paths: seq[string]) =
   withMindDb: db.transaction:
     for path in paths:
       tagds = @[newFileTag()]
-      db.select(file, "File.path = ?", path)
-      db.selectOneToMany(file, tagds)
-      db.delete tagds
-      if file.persistent: removeFile file.path
-      db.delete file
+      try:
+        db.select(file, "File.path = ?", path)
+        db.selectOneToMany(file, tagds)
+        db.delete tagds
+        if file.persistent: removeFile file.path
+        db.delete file
+      except: discard
 
 proc deleteTagsFromFiles*(paths, tagNames: seq[string]) =
   var tagds: seq[FileTag]

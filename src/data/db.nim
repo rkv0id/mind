@@ -13,6 +13,7 @@ type
   File* = ref object of Model
     path* {.uniqueIndex: "File_paths".}: string
     persistent*: bool
+    memo*: bool
 
   Tag* = ref object of Model
     name* {.uniqueIndex: "Tag_names".}: string
@@ -24,8 +25,8 @@ type
     tag* {.index: "FileTag_tag".}: Tag
     at*: DateTime
 
-func newFile*(path = "", persistent = false): File =
-  File(path: path, persistent: persistent)
+func newFile*(path = "", persistent = false, memo = false): File =
+  File(path: path, persistent: persistent, memo: memo)
 
 func newTag*(name = "", system = false, desc = ""): Tag =
   Tag(name: name, system: system, desc: desc)

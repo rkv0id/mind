@@ -24,7 +24,7 @@ Usage:
   mind desc <tag> <description>
   mind rm <tags>...
   mind memo [<memoid>]
-  mind find [-fmt] [<query>]
+  mind find [-fm] [<query>]
 
 Options:
   -h --help               Show this screen.
@@ -36,7 +36,6 @@ Options:
   -H --hard               Create a hard link for a file and tag it.
   -f --files              Show only files out of the query results.
   -m --memos              Show only memos out of the query results.
-  -t --tasks              Show only tasks out of the query results.
 """
 
 when isMainModule:
