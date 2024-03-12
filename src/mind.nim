@@ -2,7 +2,7 @@ import docopt
 import docopt/dispatch
 
 import ./app/[memos, tags, queries]
-from ./data/entities import existsOrInitDb, syncDb
+from ./data/db import existsOrInitDb, syncDb
 from ./data/repository import existsOrInitRepo, dropRepo
 
 

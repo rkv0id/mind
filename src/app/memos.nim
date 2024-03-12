@@ -5,8 +5,9 @@ from std/strutils import isEmptyOrWhitespace
 
 from regex import re2, findAll
 
-from ../data/entities import addTaggedFiles
+from ../data/memos import updateMemoTags
 from ../data/repository import memoFile, newMemoFile
+from ../data/tags import addTaggedFiles, deleteFiles
 
 
 proc memo*(memoid: string) =
@@ -19,13 +20,17 @@ proc memo*(memoid: string) =
   
   if execShellCmd(defaultEditor & " " & memoToOpen) == 0:
     let content = readFile memoToOpen
-    tags = content
-      .findAll(re2"#[a-zA-Z_]\w*")
-      .mapIt(content[it.boundaries])
-      .toHashSet.toSeq
+    if content.isEmptyOrWhitespace:
+      deleteFiles @[memoToOpen]
+      # TODO: delete tags from file & delete memo file from db
+    else:
+      tags = content
+        .findAll(re2"#[a-zA-Z_]\w*")
+        .mapIt(content[it.boundaries])
+        .toHashSet.toSeq
   
     # TODO: deal with file persistence in memos
     # folder instead before adding tags
     # also don't forget to delete invalidated tags
-    addTaggedFiles(@[memoToOpen], tags)
+    updateMemoTags(memoToOpen, tags)
   else: raise newException(IOError, "Something went wrong while trying to open/edit the memo!")

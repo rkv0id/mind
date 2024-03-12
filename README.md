@@ -18,7 +18,7 @@ With a focus on simplicity, **Mind** allows users to effortlessley exploit the t
 - [ ] Key-value store :key: (with optional encryption :lock:)
 - [ ] Backups (compression and auto-backups)
 - [ ] Full error-handling + code and usage documentation
-- [ ] Optimization time / ORM-less? :thinking_face: (maybe SQL-less too)
+- [ ] Optimization time / ORM-less, Cascade deletes? :thinking_face: (maybe SQL-less even)
 - [ ] Some CLI visual work (maybe some zsh completions)
 - [ ] Testing :tired_face:
 - [ ] Behaviour configuration and defaults

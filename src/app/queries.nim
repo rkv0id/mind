@@ -3,7 +3,7 @@ from std/sequtils import mapIt
 from regex import re2, findAll
 from std/strutils import toLower, isEmptyOrWhitespace, replace, join
 
-from ../data/entities import readFiles
+from ../data/tags import readFiles
 
 type
   NodeKind = enum

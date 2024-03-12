@@ -14,10 +14,11 @@ let
 proc existsOrInitRepo*() =
   discard existsOrCreateDir mindDataDir
   discard existsOrCreateDir mindFilesDir
+  discard existsOrCreateDir mindMemosDir
 
 proc dropRepo*() = removeDir mindDataDir
 proc hardFile*(filename: string): string = mindFilesDir.joinPath(filename)
-proc newMemoFile*(): string = mindMemosDir.joinPath("M" & $hash(now()) & ".mem")
+proc newMemoFile*(): string = mindMemosDir.joinPath("M" & $hash($now()) & ".mem")
 proc memoFile*(memoname: string): string =
   let memofilepath = mindMemosDir.joinPath(memoname & ".mem")
   if memofilepath.fileExists: memofilepath

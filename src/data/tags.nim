@@ -7,50 +7,10 @@ from std/os import fileExists, removeFile, getFileInfo,
                    splitFile, absolutePath, createHardlink
 
 import norm/sqlite
-from norm/model import Model
-from norm/pragmas import index, uniqueIndex
 
-from ./repository import mindDbFile, hardFile
+import ./db
+from ./repository import hardFile
 
-
-type
-  File = ref object of Model
-    path {.uniqueIndex: "File_paths".}: string
-    persistent: bool
-
-  Tag = ref object of Model
-    name {.uniqueIndex: "Tag_names".}: string
-    system: bool
-    desc: string
-  
-  FileTag = ref object of Model
-    file {.index: "FileTag_file".}: File
-    tag {.index: "FileTag_tag".}: Tag
-    at: DateTime
-
-func newFile(path = "", persistent = false): File =
-  File(path: path, persistent: persistent)
-
-func newTag(name = "", system = false, desc = ""): Tag =
-  Tag(name: name, system: system, desc: desc)
-
-func newFileTag(file = newFile(), tag = newTag(), at = now()): FileTag =
-  FileTag(file: file, tag: tag, at: at)
-
-
-template withMindDb*(body: untyped): untyped =
-  let
-    db {.inject.} =
-      try: open("file://" & mindDbFile, "", "", "")
-      except: raise newException(IOError, "Could not establish connection to local database!")
-  
-  try:
-    body
-  finally: close db
-
-proc existsOrInitDb*() =
-  if not fileExists mindDbFile:
-    withMindDb: db.createTables newFileTag()
 
 proc readTags*(system = false): seq[tuple[name, desc: string, count: int64]] =
   var
@@ -72,7 +32,8 @@ proc readFiles*(predicate: HashSet[string] -> bool): seq[string] =
   withMindDb: db.transaction: db.selectAll tagds
 
   for filetag in tagds:
-    if not (filetag.file.path in tagsByFile): tagsByFile[filetag.file.path] = initHashSet[string]()
+    if not (filetag.file.path in tagsByFile):
+      tagsByFile[filetag.file.path] = initHashSet[string]()
     tagsByFile[filetag.file.path].incl filetag.tag.name
   
   tagsByFile.keys.toSeq.filterIt(predicate tagsByFile[it])
@@ -148,7 +109,7 @@ proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
     extensionsTable = extensionsToPaths(files, persistent)
 
   var
-    file: File
+    file: db.File
     sysTags: seq[Tag]
     tags: seq[Tag]
     tagged: FileTag
@@ -174,39 +135,10 @@ proc addTaggedFiles*(files, tagNames: seq[string], persistent = false) =
           try: db.select(tagged, "FileTag.tag = ? and FileTag.file = ?", tag, file)
           except: db.insert tagged
 
-proc updateMemoTags(memoFilePath: string, tagNames: seq[string]) =
-  let at = now()
-  var
-    file: File
-    tag: Tag
-    tagged: FileTag
-  
-  withMindDb: db.transaction:
-    file = newFile(memoFilePath, false)
-    try: db.select(file, "File.path = ? and File.persistent = 1", memoFilePath)
-    except: discard
-
-    tag = newTag("sys[memo]", true, "Tracks all memos (tagged and untagged).")
-    try: db.select(tag, "Tag.name = ? and Tag.system = 1", tag.name)
-    except: discard
-
-    tagged = newFileTag(file, tag, at)
-    try: db.select(tagged, "FileTag.tag = ? and FileTag.file = ?", tag, file)
-    except: db.insert tagged
-
-    for name in tagNames:
-      tag = newTag(name)
-      try: db.select(tag, "Tag.name = ? and Tag.system = 0", tag.name)
-      except: discard
-
-      tagged = newFileTag(file, tag, at)
-      try: db.select(tagged, "FileTag.tag = ? and FileTag.file = ?", tag, file)
-      except: db.insert tagged
-
 proc deleteTags*(tagNames: seq[string]) =
   var
     tag: Tag
-    files: seq[File]
+    files: seq[db.File]
     tagds: seq[FileTag]
 
   withMindDb: db.transaction:
@@ -255,17 +187,3 @@ proc deleteTagsFromFiles*(paths, tagNames: seq[string]) =
         if tagds[0].file.persistent: removeFile tagds[0].file.path
         db.delete tagds[0].file
         db.delete tagds
-
-proc syncDb*() =
-  var
-    files = @[newFile()]
-    tagds: seq[FileTag]
-
-  withMindDb: db.transaction:
-    db.select(files, "File.persistent = 0")
-    files = files.filterIt(not it.path.fileExists)
-    for file in files:
-      tagds = @[newFileTag()]
-      db.selectOneToMany(file, tagds)
-      db.delete tagds
-    db.delete files

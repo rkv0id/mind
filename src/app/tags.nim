@@ -5,9 +5,9 @@ from std/sequtils import toSeq, filterIt, foldl, mapIt
 
 from regex import re2, match
 
-from ../data/entities import addTaggedFiles, deleteTags, deleteFiles,
-                             updateTagName, updateTagDesc, readTags,
-                             deleteTagsFromFiles
+from ../data/tags import addTaggedFiles, deleteTags, deleteFiles,
+                         updateTagName, updateTagDesc, readTags,
+                         deleteTagsFromFiles
 
 
 proc listTags*(tagpattern: string, all, system, quiet: bool) =
