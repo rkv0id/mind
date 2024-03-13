@@ -17,14 +17,19 @@ Usage:
   mind -v
   mind sync
   mind init [-r]
-  mind ls [-asq] [<tagpattern>]
-  mind tag [-H] <filepattern> <tags>...
-  mind untag <filepattern> [<tags>...]
-  mind mv <name> <newname>
-  mind desc <tag> <description>
-  mind rm <tags>...
-  mind memo [<memoid>]
-  mind find [-fm] [<query>]
+  mind find [-fmq] [<query>]
+  mind tags ls [-asq] [<tagpattern>]
+  mind tags tag [-H] <filepattern> <tags>...
+  mind tags untag <filepattern> [<tags>...]
+  mind tags mv <name> <newname>
+  mind tags desc <tag> <description>
+  mind tags rm <tags>...
+  mind memos open [<memoid>]
+  mind memos rm <memos>...
+  mind tasks new <task>
+  mind tasks new --from <memoid>
+  mind tasks done <memoid>
+  mind tasks undo <memoid>
 
 Options:
   -h --help               Show this screen.
