@@ -4,7 +4,6 @@ from regex import re2, findAll
 from std/strutils import toLower, isEmptyOrWhitespace, replace, join
 
 from ../data/tags import readFiles
-from ../data/memos import readMemos
 
 type
   NodeKind = enum
@@ -69,23 +68,13 @@ func interpret(ast: Node): (HashSet[string] -> bool) =
     of nkExtension: "ext[" & ast.val & "]" in tags
     of nkType: "type[" & ast.val.toLower & "]" in tags
 
-proc find*(query: string, files, memos: bool) =
-  # TODO: FIX VISUALIZATION AND ADD QUIET MODE
-  # ALSO, REMOVE PATHS FROM MEMOS AND ONLY SHOW IN QUIET
+proc find*(query: string) =
   let
     predicate =
       if query.isEmptyOrWhitespace or query == "nil":
         proc (x: HashSet[string]): bool = true
       else: interpret parse query
+    shownFiles = readFiles(predicate).join("\n")
 
-  if files or not (files or memos):
-    let shownFiles = readFiles(predicate).join("\n")
-    if shownFiles.len > 0:
-      echo "FILES:"
-      echo shownFiles
+  if shownFiles.len > 0: echo shownFiles
   
-  if memos or not (files or memos):
-    let shownMemos = readMemos(predicate).join("\n")
-    if shownMemos.len > 0:
-      echo "MEMOS:"
-      echo shownMemos

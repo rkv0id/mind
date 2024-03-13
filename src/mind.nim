@@ -1,7 +1,7 @@
 import docopt
 import docopt/dispatch
 
-import ./app/[memos, tags, queries]
+import ./app/[tags, queries]
 from ./data/db import existsOrInitDb, syncDb
 from ./data/repository import existsOrInitRepo, dropRepo
 
@@ -17,23 +17,13 @@ Usage:
   mind -v
   mind sync
   mind init [-r]
-  mind find [-fmq] [<query>]
-  mind tags ls [-asq] [<tagpattern>]
-  mind tags tag [-H] <filepattern> <tags>...
-  mind tags untag <filepattern> [<tags>...]
-  mind tags mv <name> <newname>
-  mind tags desc <tag> <description>
-  mind tags rm <tags>...
-  mind memos open [<memoid>]
-  mind memos rm <memos>...
-  mind tasks new <task>
-  mind tasks new --from <memoid>
-  mind tasks done <memoid>
-  mind tasks undo <memoid>
-  mind kv store <key> <value>
-  mind kv get <key>
-  mind kv rm <key>
-  mind kv mv <key> <newkey>
+  mind find [<query>]
+  mind ls [-asq] [<tagpattern>]
+  mind tag [-H] <filepattern> <tags>...
+  mind untag <filepattern> [<tags>...]
+  mind mv <name> <newname>
+  mind desc <tag> <description>
+  mind rm <tags>...
 
 Options:
   -h --help               Show this screen.
@@ -44,7 +34,6 @@ Options:
   -q --quiet              Show a shorter more concise version of the output.
   -H --hard               Create a hard link for a file and tag it.
   -f --files              Show only files out of the query results.
-  -m --memos              Show only memos out of the query results.
 """
 
 when isMainModule:
@@ -62,5 +51,4 @@ when isMainModule:
   args.dispatchProc(modTag, "mv")
   args.dispatchProc(describeTag, "desc")
   args.dispatchProc(removeTag, "rm")
-  args.dispatchProc(memo, "memo")
   args.dispatchProc(find, "find")

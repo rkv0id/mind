@@ -29,7 +29,7 @@ proc readFiles*(predicate: HashSet[string] -> bool): seq[string] =
   var
     tagds = @[newFileTag()]
     tagsByFile: Table[string, HashSet[string]]
-  withMindDb: db.transaction: db.select(tagds, "File.memo = 0")
+  withMindDb: db.transaction: db.selectAll tagds
 
   for filetag in tagds:
     if not (filetag.file.path in tagsByFile):
