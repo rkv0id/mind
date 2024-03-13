@@ -30,6 +30,10 @@ Usage:
   mind tasks new --from <memoid>
   mind tasks done <memoid>
   mind tasks undo <memoid>
+  mind kv store <key> <value>
+  mind kv get <key>
+  mind kv rm <key>
+  mind kv mv <key> <newkey>
 
 Options:
   -h --help               Show this screen.
